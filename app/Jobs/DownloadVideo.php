@@ -18,6 +18,8 @@ class DownloadVideo implements ShouldQueue
 
     public int $videoId;
 
+    // php artisan queue:work --queue=video-downloads
+
     public function __construct(int $videoId)
     {
         $this->videoId = $videoId;
@@ -46,7 +48,7 @@ class DownloadVideo implements ShouldQueue
                 $thumbPath = $downloader->downloadThumbnail($video);
                 $updates['thumbnail'] = $thumbPath;
             } catch (\Throwable $e) {
-                Log::warning('Thumbnail download failed for video ID '.$video->id.': '.$e->getMessage());
+                Log::warning('Thumbnail download failed for video ID ' . $video->id . ': ' . $e->getMessage());
             }
         }
 

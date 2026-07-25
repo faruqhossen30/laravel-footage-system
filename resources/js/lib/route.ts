@@ -1,6 +1,7 @@
 export function route(name?: string, params: any = {}): any {
     if (!name) {
-        const queryParams = Object.fromEntries(new URLSearchParams(window.location.search));
+        const search = typeof window !== 'undefined' ? window.location.search : '';
+        const queryParams = Object.fromEntries(new URLSearchParams(search));
         return { params: queryParams };
     }
 
@@ -20,7 +21,19 @@ export function route(name?: string, params: any = {}): any {
     else if (name === 'video.stop-downloads') url = '/admin/video/stop-downloads';
     else if (name === 'video.pixabay.store') url = '/admin/video';
     else if (name === 'category.index') url = '/admin/category';
+    else if (name === 'category.create') url = '/admin/category/create';
+    else if (name === 'category.show') url = `/admin/category/${params.id}`;
+    else if (name === 'category.edit') url = `/admin/category/${params.id}/edit`;
+    else if (name === 'category.update') url = `/admin/category/${params.id}`;
+    else if (name === 'category.destroy') url = `/admin/category/${params.id}`;
     else if (name === 'category.store') url = '/admin/category';
+    else if (name === 'sub-category.index') url = '/admin/sub-category';
+    else if (name === 'sub-category.create') url = '/admin/sub-category/create';
+    else if (name === 'sub-category.show') url = `/admin/sub-category/${params.id}`;
+    else if (name === 'sub-category.edit') url = `/admin/sub-category/${params.id}/edit`;
+    else if (name === 'sub-category.update') url = `/admin/sub-category/${params.id}`;
+    else if (name === 'sub-category.destroy') url = `/admin/sub-category/${params.id}`;
+    else if (name === 'sub-category.store') url = '/admin/sub-category';
     else if (name === 'homepage') url = '/';
     else if (name === 'search') url = '/search';
     else url = `/${name.replace(/\./g, '/')}`;

@@ -4,7 +4,7 @@ import React from 'react'
 import { useState } from 'react';
 
 function ThumbnailInput({ name,thumbnail=null, setData, errors,placeholder }) {
-    const [photo, setPhoto] = useState(thumbnail && window.location.origin + '/storage/' +  thumbnail);
+    const [photo, setPhoto] = useState(thumbnail && typeof window !== 'undefined' ? window.location.origin + '/storage/' +  thumbnail : null);
 
     function thumbnailChangeHandaller(e) {
         setData(name, e.target.files[0]);

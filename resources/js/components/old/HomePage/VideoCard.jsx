@@ -14,7 +14,7 @@ const VideoCard = ({ video, onPlay }) => {
             <div className="aspect-video w-full overflow-hidden">
                 <img
                     // src={`${video.thumbnail}`}
-                    src={window.location.origin + '/server/' + video.thumbnail}
+                    src={'/server/' + video.thumbnail}
                     alt={video.title}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     loading="lazy"

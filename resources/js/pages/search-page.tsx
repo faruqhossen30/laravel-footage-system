@@ -364,7 +364,7 @@ const SearchPage = ({ videos, filters, categories, tags }) => {
                 {currentVideo && (
                     <div className="bg-white dark:bg-slate-800">
                         <video
-                            src={window.location.origin + '/server/' + currentVideo.file_path}
+                            src={'/server/' + currentVideo.file_path}
                             controls
                             autoPlay
                             className="w-full"

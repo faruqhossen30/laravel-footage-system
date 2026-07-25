@@ -1,8 +1,11 @@
 // @ts-nocheck
 import { route } from '@/lib/route';
-import { Head, useForm } from '@inertiajs/react';
-import { Input } from '@/components/old/input';
-import { Button } from '@/components/old/button';
+import { Head, useForm, Link } from '@inertiajs/react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import Select from 'react-select';
 
 export default function Edit({ video, tags = [], categories = [], subCategories = [], selectedCategoryIds = [], selectedSubCategoryIds = [], selectedTagIds = [] }) {
@@ -35,55 +38,113 @@ export default function Edit({ video, tags = [], categories = [], subCategories 
     return (
         <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
             <Head title={`Edit Video #${video.id}`} />
-            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 rounded shadow-sm p-4 space-y-4">
-                <form onSubmit={submit} className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-medium">Title</label>
-                        <Input value={data.title} onChange={(e) => setData('title', e.target.value)} placeholder="Enter title" />
-                        {errors.title && <div className="text-red-500 text-sm mt-1">{errors.title}</div>}
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-2">Tags</label>
-                        <Select
-                            isMulti
-                            options={tagOptions}
-                            value={tagValue}
-                            onChange={(vals) => setData('tag_ids', (vals ?? []).map(v => v.value))}
-                            className="react-select-container"
-                            classNamePrefix="react-select"
-                        />
-                        {errors.tag_ids && <div className="text-red-500 text-sm mt-1">{errors.tag_ids}</div>}
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-2">Categories</label>
-                        <Select
-                            isMulti
-                            options={categoryOptions}
-                            value={categoryValue}
-                            onChange={(vals) => setData('category_ids', (vals ?? []).map(v => v.value))}
-                            className="react-select-container"
-                            classNamePrefix="react-select"
-                        />
-                        {errors.category_ids && <div className="text-red-500 text-sm mt-1">{errors.category_ids}</div>}
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-2">Sub Categories</label>
-                        <Select
-                            isMulti
-                            options={subCategoryOptions}
-                            value={subCategoryValue}
-                            onChange={(vals) => setData('sub_category_ids', (vals ?? []).map(v => v.value))}
-                            className="react-select-container"
-                            classNamePrefix="react-select"
-                        />
-                        {errors.sub_category_ids && <div className="text-red-500 text-sm mt-1">{errors.sub_category_ids}</div>}
-                    </div>
+            
+            <Breadcrumb>
+                <BreadcrumbList>
+                    <BreadcrumbItem>
+                        <BreadcrumbLink asChild>
+                            <Link href={route("dashboard")}>Dashboard</Link>
+                        </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                        <BreadcrumbLink asChild>
+                            <Link href={route("video.index")}>Videos</Link>
+                        </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                        <BreadcrumbPage>Edit</BreadcrumbPage>
+                    </BreadcrumbItem>
+                </BreadcrumbList>
+            </Breadcrumb>
 
-                    <div className="flex items-center gap-3">
-                        <Button type="submit" disabled={processing}>Save</Button>
-                    </div>
-                </form>
-            </div>
+            <Card>
+                <CardHeader className="bg-gray-100/50 dark:bg-gray-800/50 border-b">
+                    <CardTitle className="text-lg">Edit Video #{video.id}</CardTitle>
+                    <CardDescription>Update video details</CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                    <form onSubmit={submit} className="space-y-6 max-w-2xl mx-auto">
+                        <div className="space-y-2">
+                            <Label htmlFor="title">Title</Label>
+                            <Input id="title" value={data.title} onChange={(e) => setData('title', e.target.value)} placeholder="Enter title" />
+                            {errors.title && <div className="text-red-500 text-sm mt-1">{errors.title}</div>}
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <Label>Tags</Label>
+                            <Select
+                                isMulti
+                                options={tagOptions}
+                                value={tagValue}
+                                onChange={(vals) => setData('tag_ids', (vals ?? []).map(v => v.value))}
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                                styles={{
+                                    control: (base) => ({
+                                        ...base,
+                                        borderColor: '#e5e7eb',
+                                        borderRadius: '0.375rem',
+                                        padding: '0.125rem',
+                                        boxShadow: 'none',
+                                        '&:hover': { borderColor: '#d1d5db' }
+                                    })
+                                }}
+                            />
+                            {errors.tag_ids && <div className="text-red-500 text-sm mt-1">{errors.tag_ids}</div>}
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <Label>Categories</Label>
+                            <Select
+                                isMulti
+                                options={categoryOptions}
+                                value={categoryValue}
+                                onChange={(vals) => setData('category_ids', (vals ?? []).map(v => v.value))}
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                                styles={{
+                                    control: (base) => ({
+                                        ...base,
+                                        borderColor: '#e5e7eb',
+                                        borderRadius: '0.375rem',
+                                        padding: '0.125rem',
+                                        boxShadow: 'none',
+                                        '&:hover': { borderColor: '#d1d5db' }
+                                    })
+                                }}
+                            />
+                            {errors.category_ids && <div className="text-red-500 text-sm mt-1">{errors.category_ids}</div>}
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <Label>Sub Categories</Label>
+                            <Select
+                                isMulti
+                                options={subCategoryOptions}
+                                value={subCategoryValue}
+                                onChange={(vals) => setData('sub_category_ids', (vals ?? []).map(v => v.value))}
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                                styles={{
+                                    control: (base) => ({
+                                        ...base,
+                                        borderColor: '#e5e7eb',
+                                        borderRadius: '0.375rem',
+                                        padding: '0.125rem',
+                                        boxShadow: 'none',
+                                        '&:hover': { borderColor: '#d1d5db' }
+                                    })
+                                }}
+                            />
+                            {errors.sub_category_ids && <div className="text-red-500 text-sm mt-1">{errors.sub_category_ids}</div>}
+                        </div>
+
+                        <Button type="submit" disabled={processing}>Save Changes</Button>
+                    </form>
+                </CardContent>
+            </Card>
         </div>
     );
 }
