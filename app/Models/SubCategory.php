@@ -23,4 +23,11 @@ class SubCategory extends Model
             ->using(VideoSubCategory::class)
             ->withTimestamps();
     }
+
+    public function images(): BelongsToMany
+    {
+        return $this->belongsToMany(Image::class, 'image_sub_categories', 'sub_category_id', 'image_id')
+            ->using(ImageSubCategory::class)
+            ->withTimestamps();
+    }
 }

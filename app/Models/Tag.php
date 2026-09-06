@@ -19,4 +19,11 @@ class Tag extends Model
             ->using(VideoTag::class)
             ->withTimestamps();
     }
+
+    public function images(): BelongsToMany
+    {
+        return $this->belongsToMany(Image::class, 'image_tags', 'tag_id', 'image_id')
+            ->using(ImageTag::class)
+            ->withTimestamps();
+    }
 }

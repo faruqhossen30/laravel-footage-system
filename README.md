@@ -17,6 +17,17 @@ php artisan queue:work --queue=video-downloads --sleep=1 --tries=3
 
 > **Note:** ইনভায়রনমেন্ট ফাইলে (`.env`) অবশ্যই `QUEUE_CONNECTION=database` সেট করা থাকতে হবে।
 
+### ইমেজ ডাউনলোডের জন্য কিউ রান করা (Run the Queue for Image Downloads)
+
+নিচের কমান্ডটি টার্মিনালে রান করুন:
+
+```bash
+php artisan queue:work --queue=image-downloads --sleep=1 --tries=3
+```
+
+- `--sleep=1`: কিউতে কোনো কাজ না থাকলে ওয়ার্কার ১ সেকেন্ড অপেক্ষা করবে।
+- `--tries=3`: কোনো কাজ (Job) ফেইল করলে এটি সর্বোচ্চ ৩ বার পুনরায় চেষ্টা করবে।
+
 ## অন্যান্য প্রয়োজনীয় কমান্ড (Useful Commands)
 
 **স্টোরেজ লিংক তৈরি করা (Storage Link):**

@@ -20,6 +20,14 @@ export function route(name?: string, params: any = {}): any {
     else if (name === 'video.enqueue') url = '/admin/video/enqueue';
     else if (name === 'video.stop-downloads') url = '/admin/video/stop-downloads';
     else if (name === 'video.pixabay.store') url = '/admin/video';
+    else if (name === 'image.index') url = '/admin/image';
+    else if (name === 'image.create') url = '/admin/image/create';
+    else if (name === 'image.edit') url = `/admin/image/${params.id}`;
+    else if (name === 'image.update') url = `/admin/image/${params.id}`;
+    else if (name === 'image.destroy') url = `/admin/image/${params.id}`;
+    else if (name === 'image.enqueue') url = '/admin/image/enqueue';
+    else if (name === 'image.stop-downloads') url = '/admin/image/stop-downloads';
+    else if (name === 'image.pixabay.store') url = '/admin/image';
     else if (name === 'category.index') url = '/admin/category';
     else if (name === 'category.create') url = '/admin/category/create';
     else if (name === 'category.show') url = `/admin/category/${params.id}`;
