@@ -20,7 +20,21 @@ const HeroSection = () => {
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 opacity-20 dark:opacity-25" />
                 <div className="relative mx-auto max-w-7xl px-6 py-16">
                     <div className="mx-auto max-w-3xl text-center">
-                        <Link href={route('homepage')} className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl">
+                        <div className="mb-5 inline-flex items-center rounded-full bg-white/90 p-1 shadow-sm backdrop-blur dark:bg-gray-900/90 border border-gray-200 dark:border-gray-800">
+                            <Link
+                                href={route('homepage')}
+                                className="inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white shadow"
+                            >
+                                <span>Videos</span>
+                            </Link>
+                            <Link
+                                href={route('images')}
+                                className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
+                            >
+                                <span>Images</span>
+                            </Link>
+                        </div>
+                        <Link href={route('homepage')} className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl block">
                             Discover free stock video footage
                         </Link>
                         <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">

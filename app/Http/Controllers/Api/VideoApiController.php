@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Category;
 use App\Models\SubCategory;
 use App\Models\Tag;
 use App\Models\Video;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class VideoApiController extends Controller
@@ -42,16 +41,16 @@ class VideoApiController extends Controller
         if (! $targetVideo) {
             $targetVideo = Video::create([
                 'title' => $validated['title'],
-                'povider'    => 'storyblocks',
+                'povider' => 'storyblocks',
                 'povider_id' => $validated['assetId'],
-                'file_name'  => $validated['file_name'],
-                'file_path'  => 'videos/' . $validated['file_name'],
-                'thumbnail'  => $validated['thumbnail'] ?? null,
-                'width'      => null,
-                'height'     => null,
-                'size'       => null,
-                'duration'   => $validated['duration'] ?? null,
-                'video_quality'   => $validated['video_quality'] ?? null,
+                'file_name' => $validated['file_name'],
+                'file_path' => 'videos/'.$validated['file_name'],
+                'thumbnail' => $validated['thumbnail'] ?? null,
+                'width' => null,
+                'height' => null,
+                'size' => null,
+                'duration' => $validated['duration'] ?? null,
+                'video_quality' => $validated['video_quality'] ?? null,
             ]);
         }
 
@@ -72,7 +71,7 @@ class VideoApiController extends Controller
             $slug = $baseSlug;
             $i = 1;
             while (Tag::where('slug', $slug)->exists()) {
-                $slug = $baseSlug . '-' . $i;
+                $slug = $baseSlug.'-'.$i;
                 $i++;
             }
 
@@ -118,14 +117,14 @@ class VideoApiController extends Controller
         $file_exist = false;
 
         if ($video && $video->file_path) {
-            $file_path = env('DISK_FILE_LOCATION') . $video->file_path;
+            $file_path = env('DISK_FILE_LOCATION').$video->file_path;
             $file_exist = file_exists($file_path);
         }
 
         return response()->json([
             'video_exist' => (bool) $video,
             'file_exist' => $file_exist,
-            'video' =>  $video
+            'video' => $video,
         ]);
     }
 
@@ -140,7 +139,7 @@ class VideoApiController extends Controller
             if (is_string($ids)) {
                 $ids = array_filter(explode(',', $ids));
             }
-            if (is_array($ids) && !empty($ids)) {
+            if (is_array($ids) && ! empty($ids)) {
                 $query->whereIn('id', $ids);
                 $hasIds = true;
             }
@@ -155,13 +154,15 @@ class VideoApiController extends Controller
         }
 
         if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhereHas('tags', function ($tagsQuery) use ($search) {
+            $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+
+            $query->where(function ($q) use ($search, $likeOperator) {
+                $q->where('title', $likeOperator, "%{$search}%")
+                    ->orWhereHas('tags', function ($tagsQuery) use ($search, $likeOperator) {
                         $terms = array_filter(explode(' ', $search));
-                        $tagsQuery->where(function ($subQ) use ($terms) {
+                        $tagsQuery->where(function ($subQ) use ($terms, $likeOperator) {
                             foreach ($terms as $term) {
-                                $subQ->orWhere('name', 'like', "%{$term}%");
+                                $subQ->orWhere('name', $likeOperator, "%{$term}%");
                             }
                         });
                     });
@@ -169,13 +170,13 @@ class VideoApiController extends Controller
         }
 
         // 3. Retrieve videos (limit only when no ids query is provided)
-        if (!$hasIds) {
+        if (! $hasIds) {
             $limit = $request->integer('limit', 5);
             $query->limit($limit);
         }
 
         $videos = $query->get();
-        if (!count($videos)) {
+        if (! count($videos)) {
             $videos = Video::inRandomOrder()->limit(3)->get();
         }
 
@@ -185,7 +186,7 @@ class VideoApiController extends Controller
             return [
                 'id' => $video->id,
                 'title' => $video->title,
-                'video_link' => $video->file_path ? ($diskLocation . $video->file_path) : null,
+                'video_link' => $video->file_path ? ($diskLocation.$video->file_path) : null,
                 'duration' => $video->duration,
             ];
         });

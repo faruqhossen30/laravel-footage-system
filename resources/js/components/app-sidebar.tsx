@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid, VideoIcon, TagsIcon, ListTreeIcon, ImageIcon } from 'lucide-react';
+import { BookOpen, FolderGit2, LayoutGrid, VideoIcon, TagsIcon, ListTreeIcon, ImageIcon, TagIcon } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -41,6 +41,11 @@ const mainNavItems: NavItem[] = [
         title: 'Sub Category',
         href: '/admin/sub-category',
         icon: ListTreeIcon,
+    },
+    {
+        title: 'Tags',
+        href: '/admin/tag',
+        icon: TagIcon,
     },
 ];
 

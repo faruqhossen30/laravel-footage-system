@@ -20,6 +20,15 @@ class Image extends Model
         'status',
     ];
 
+    protected $appends = [
+        'disk_path',
+    ];
+
+    public function getDiskPathAttribute(): ?string
+    {
+        return $this->file_path ? env('DISK_FILE_LOCATION', '/Volumes/Files/server/').$this->file_path : null;
+    }
+
     protected function casts(): array
     {
         return [

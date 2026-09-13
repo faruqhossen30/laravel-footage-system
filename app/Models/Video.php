@@ -26,13 +26,22 @@ class Video extends Model
 
     ];
 
+    protected $appends = [
+        'disk_path',
+    ];
+
+    public function getDiskPathAttribute(): ?string
+    {
+        return $this->file_path ? env('DISK_FILE_LOCATION', '/Volumes/Files/server/').$this->file_path : null;
+    }
+
     protected function casts(): array
     {
         return [
             // Note: column name is 'povider' in schema; cast accordingly
             'povider' => VideoProvider::class,
             'status' => VideoStatus::class,
-            'duration' => 'integer'
+            'duration' => 'integer',
         ];
     }
 
@@ -55,5 +64,4 @@ class Video extends Model
             ->using(VideoSubCategory::class)
             ->withTimestamps();
     }
-
 }

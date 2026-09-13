@@ -9,6 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -28,7 +29,7 @@ class DownloadVideo implements ShouldQueue
 
     public function handle(DownloadService $downloader): void
     {
-        if (\Illuminate\Support\Facades\Cache::get('stop_video_downloads')) {
+        if (Cache::get('stop_video_downloads')) {
             throw new \Exception('Downloads stopped by user.');
         }
 
@@ -47,8 +48,8 @@ class DownloadVideo implements ShouldQueue
             try {
                 $thumbPath = $downloader->downloadThumbnail($video);
                 $updates['thumbnail'] = $thumbPath;
-            } catch (\Throwable $e) {
-                Log::warning('Thumbnail download failed for video ID ' . $video->id . ': ' . $e->getMessage());
+            } catch (Throwable $e) {
+                Log::warning('Thumbnail download failed for video ID '.$video->id.': '.$e->getMessage());
             }
         }
 

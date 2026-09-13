@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Jobs\DownloadVideo;
 use App\Models\Category;
-use App\Models\Tag;
 use App\Models\SubCategory;
+use App\Models\Tag;
 use App\Models\Video;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -19,7 +21,7 @@ class VideoController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(\Illuminate\Http\Request $request)
+    public function index(Request $request)
     {
         $query = Video::with([
             'categories:id,name',
@@ -68,43 +70,21 @@ class VideoController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
-        $per_page = null;
-        if (isset($_GET['per_page']) && $_GET['per_page']) {
-            $per_page = $_GET['per_page'];
-        }
-
-        $page = null;
-        if (isset($_GET['page']) && $_GET['page']) {
-            $page = $_GET['page'];
-        }
-
-        $order = null;
-        if (isset($_GET['order']) && $_GET['order']) {
-            $order = $_GET['order'];
-        }
-
-
-        $search = null;
-        if (isset($_GET['search']) && $_GET['search']) {
-            $search = $_GET['search'];
-        }
-
-        $provider = null;
-        if (isset($_GET['provider']) && $_GET['provider']) {
-            $provider = $_GET['provider'];
-        }
+        $per_page = $request->query('per_page', 10);
+        $page = $request->query('page', 1);
+        $order = $request->query('order', 'popular');
+        $search = $request->query('search', '');
 
         $key = env('PIXABAY_API_KEY');
-        $query = $search;
 
         $params = [
             'key' => $key,
             'q' => $search,
-            'order' => $order ?? 'popular',
-            'page' => $page ?? 1,
-            'per_page' => $per_page ?? 10,
+            'order' => $order ?: 'popular',
+            'page' => $page ?: 1,
+            'per_page' => $per_page ?: 10,
         ];
 
         $queryParams = http_build_query($params);
@@ -112,20 +92,23 @@ class VideoController extends Controller
         $response = Http::get($url);
         $data = $response->json();
 
-        $data['hits'];
-        $ids = collect($data['hits'])->pluck('id')->toArray();
+        $hits = $data['hits'] ?? [];
+        $ids = collect($hits)->pluck('id')->toArray();
 
         $existIds = Video::whereIn('povider_id', $ids)->pluck('povider_id')->toArray();
-
-        // return $data;
-
 
         return Inertia::render(
             'admin/video/pixabay-videos',
             [
-                'items' => $data['hits'],
+                'items' => $hits,
                 'existIds' => $existIds,
-                'totalHits' => $data['totalHits'],
+                'totalHits' => $data['totalHits'] ?? 0,
+                'filters' => [
+                    'search' => $search,
+                    'order' => $order ?: 'popular',
+                    'per_page' => (string) ($per_page ?: 10),
+                    'page' => (int) ($page ?: 1),
+                ],
             ]
         );
     }
@@ -175,7 +158,7 @@ class VideoController extends Controller
                 $slug = $baseSlug;
                 $i = 1;
                 while (Tag::where('slug', $slug)->exists()) {
-                    $slug = $baseSlug . '-' . $i;
+                    $slug = $baseSlug.'-'.$i;
                     $i++;
                 }
 
@@ -192,7 +175,7 @@ class VideoController extends Controller
             }
         }
 
-        return  to_route('video.index');
+        return to_route('video.index');
     }
 
     public function store(Request $request) {}
@@ -260,7 +243,7 @@ class VideoController extends Controller
     public function enqueueDownloads(Request $request)
     {
         // Reset the stop flag so downloads can proceed
-        \Illuminate\Support\Facades\Cache::forget('stop_video_downloads');
+        Cache::forget('stop_video_downloads');
 
         $videos = Video::query()
             ->where('status', 'list')
@@ -278,7 +261,7 @@ class VideoController extends Controller
 
         Bus::chain($jobs)->dispatch();
 
-        return back()->with('success', 'Enqueued ' . count($jobs) . ' video downloads.');
+        return back()->with('success', 'Enqueued '.count($jobs).' video downloads.');
     }
 
     /**
@@ -287,10 +270,10 @@ class VideoController extends Controller
     public function stopDownloads()
     {
         // Set a flag to stop any running chains
-        \Illuminate\Support\Facades\Cache::forever('stop_video_downloads', true);
+        Cache::forever('stop_video_downloads', true);
 
         // Clear the jobs table (assuming database driver)
-        \Illuminate\Support\Facades\DB::table('jobs')->delete();
+        DB::table('jobs')->delete();
 
         // Reset 'run' status videos back to 'list' so they can be re-queued later
         Video::where('status', 'run')->update(['status' => 'list']);

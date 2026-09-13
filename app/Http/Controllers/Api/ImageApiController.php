@@ -8,6 +8,7 @@ use App\Models\Image;
 use App\Models\SubCategory;
 use App\Models\Tag;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ImageApiController extends Controller
@@ -151,13 +152,15 @@ class ImageApiController extends Controller
         }
 
         if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhereHas('tags', function ($tagsQuery) use ($search) {
+            $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+
+            $query->where(function ($q) use ($search, $likeOperator) {
+                $q->where('title', $likeOperator, "%{$search}%")
+                    ->orWhereHas('tags', function ($tagsQuery) use ($search, $likeOperator) {
                         $terms = array_filter(explode(' ', $search));
-                        $tagsQuery->where(function ($subQ) use ($terms) {
+                        $tagsQuery->where(function ($subQ) use ($terms, $likeOperator) {
                             foreach ($terms as $term) {
-                                $subQ->orWhere('name', 'like', "%{$term}%");
+                                $subQ->orWhere('name', $likeOperator, "%{$term}%");
                             }
                         });
                     });

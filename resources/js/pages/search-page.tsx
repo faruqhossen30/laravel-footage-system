@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { route } from '@/lib/route';
 import React, { useState } from 'react';
-import { MagnifyingGlassIcon, ArrowDownTrayIcon, FunnelIcon, XMarkIcon, FolderIcon, Squares2X2Icon, TagIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, ArrowDownTrayIcon, FunnelIcon, XMarkIcon, FolderIcon, Squares2X2Icon, TagIcon, ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { Link, router, Head } from '@inertiajs/react';
 import { Disclosure } from '@headlessui/react';
 import { ChevronUpIcon, ChevronRightIcon } from '@heroicons/react/20/solid';
@@ -14,6 +14,7 @@ const SearchPage = ({ videos, filters, categories, tags }) => {
     const [showPlayer, setShowPlayer] = useState(false);
     const [currentVideo, setCurrentVideo] = useState(null);
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+    const [videoCopied, setVideoCopied] = useState(false);
 
     const handlePlay = (video) => {
         setCurrentVideo(video);
@@ -49,9 +50,25 @@ const SearchPage = ({ videos, filters, categories, tags }) => {
             {/* Header / Search Bar */}
             <div className="sticky top-0 z-10 border-b border-gray-200 bg-white py-4 dark:border-gray-800 dark:bg-gray-900">
                 <div className="container mx-auto flex items-center justify-between gap-4">
-                    <Link href={route('homepage')} className="text-xl font-bold text-gray-900 dark:text-white">
-                        Footage
-                    </Link>
+                    <div className="flex items-center gap-4">
+                        <Link href={route('homepage')} className="text-xl font-bold text-gray-900 dark:text-white">
+                            Footage
+                        </Link>
+                        <div className="flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
+                            <Link
+                                href={route('search', filters.search ? { search: filters.search } : {})}
+                                className="inline-flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-indigo-600 shadow-sm dark:bg-gray-700 dark:text-indigo-400"
+                            >
+                                <span>Videos</span>
+                            </Link>
+                            <Link
+                                href={route('images', filters.search ? { search: filters.search } : {})}
+                                className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"
+                            >
+                                <span>Images</span>
+                            </Link>
+                        </div>
+                    </div>
 
                     <div className="flex-1 max-w-6xl">
                         <div className="relative">
@@ -381,6 +398,40 @@ const SearchPage = ({ videos, filters, categories, tags }) => {
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2">
+                                    {currentVideo && (
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                const path = currentVideo.disk_path || (currentVideo.file_path ? `/Volumes/Files/server/${currentVideo.file_path}` : '');
+                                                if (!path) return;
+                                                try {
+                                                    await navigator.clipboard.writeText(path);
+                                                    setVideoCopied(true);
+                                                    setTimeout(() => setVideoCopied(false), 2000);
+                                                } catch (err) {
+                                                    console.error('Failed to copy', err);
+                                                }
+                                            }}
+                                            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold shadow transition ${
+                                                videoCopied
+                                                    ? 'bg-emerald-600 text-white shadow-emerald-500/30'
+                                                    : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
+                                            }`}
+                                            title={currentVideo.disk_path || currentVideo.file_path}
+                                        >
+                                            {videoCopied ? (
+                                                <>
+                                                    <CheckIcon className="h-4 w-4 text-white" />
+                                                    <span>Copied!</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ClipboardDocumentIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                                                    <span>Copy Path</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
                                     <button className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
                                         <ArrowDownTrayIcon className="h-4 w-4" />
                                         Download

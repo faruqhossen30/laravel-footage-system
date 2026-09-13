@@ -8,9 +8,9 @@ import Pagination from '@/components/old/Pagination';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-export default function PixabayImages({ items = [], existIds = [], totalHits }) {
+export default function PixabayImages({ items = [], existIds = [], totalHits, filters = {} }) {
     const [showPlayer, setShowPlayer] = useState(false);
     const [currentImage, setCurrentImage] = useState(null);
 
@@ -19,19 +19,73 @@ export default function PixabayImages({ items = [], existIds = [], totalHits }) 
         setShowPlayer(true);
     };
 
+    const params = route().params || {};
+    const activeFilters = {
+        search: filters.search ?? params.search ?? '',
+        order: filters.order ?? params.order ?? 'popular',
+        per_page: String(filters.per_page ?? params.per_page ?? '20'),
+        page: Number(filters.page ?? params.page ?? 1),
+    };
+
+    const [searchTerm, setSearchTerm] = useState(activeFilters.search);
+    const debounceTimer = useRef(null);
+
+    useEffect(() => {
+        setSearchTerm(filters.search ?? params.search ?? '');
+    }, [filters.search, params.search]);
+
+    useEffect(() => {
+        return () => {
+            if (debounceTimer.current) {
+                clearTimeout(debounceTimer.current);
+            }
+        };
+    }, []);
+
+    const updateFilter = (newValues = {}) => {
+        const merged = {
+            search: searchTerm,
+            order: activeFilters.order,
+            per_page: activeFilters.per_page,
+            ...newValues,
+        };
+
+        if (!('page' in newValues)) {
+            delete merged.page;
+        }
+
+        const queryParams = {};
+        Object.entries(merged).forEach(([k, v]) => {
+            if (v !== undefined && v !== null && String(v).trim() !== '') {
+                queryParams[k] = v;
+            }
+        });
+
+        router.get(route('image.create'), queryParams, {
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
+        });
+    };
+
     const totalImages = totalHits ?? 500;
-    const params = route().params;
-    const perpage = Number(params.per_page ?? 20);
-    const page = Number(params.page ?? 1);
-    const lastPage = Math.ceil(totalImages / perpage);
+    const perpage = Number(activeFilters.per_page);
+    const page = Number(activeFilters.page);
+    const lastPage = Math.max(1, Math.ceil(totalImages / perpage));
 
     const generateLinks = () => {
         const links = [];
-        const urlParams = { ...params };
+        const baseParams = {
+            search: activeFilters.search,
+            order: activeFilters.order,
+            per_page: activeFilters.per_page,
+        };
 
         const makeUrl = (p) => {
             if (p < 1 || p > lastPage) return null;
-            return route('image.create', { ...urlParams, page: p });
+            const linkParams = { ...baseParams, page: p };
+            if (!linkParams.search) delete linkParams.search;
+            return route('image.create', linkParams);
         };
 
         // Previous
@@ -129,38 +183,49 @@ export default function PixabayImages({ items = [], existIds = [], totalHits }) 
                     <div className="flex items-center flex-1 w-full px-3 border bg-white dark:bg-slate-900 dark:border-gray-700 rounded-md">
                         <MagnifyingGlassIcon className="w-5 h-5 text-gray-400" />
                         <input
+                            value={searchTerm}
                             onChange={(e) => {
-                                return router.get(route('image.create', params),
-                                    { search: e.target.value },
-                                    { preserveState: true, replace: true }
-                                )
+                                const val = e.target.value;
+                                setSearchTerm(val);
+                                if (debounceTimer.current) {
+                                    clearTimeout(debounceTimer.current);
+                                }
+                                debounceTimer.current = setTimeout(() => {
+                                    updateFilter({ search: val });
+                                }, 500);
                             }}
-                            defaultValue={params.search && params.search}
-                            type="text" name="search" className="py-2 block w-full dark:bg-transparent border-gray-200 dark:border-gray-700 rounded-lg text-sm border-none focus:ring-0" placeholder="Search pixabay images..." />
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (debounceTimer.current) {
+                                        clearTimeout(debounceTimer.current);
+                                    }
+                                    updateFilter({ search: searchTerm });
+                                }
+                            }}
+                            type="text"
+                            name="search"
+                            className="py-2 block w-full dark:bg-transparent border-gray-200 dark:border-gray-700 rounded-lg text-sm border-none focus:ring-0"
+                            placeholder="Search pixabay images..."
+                        />
                     </div>
                     <div className="space-x-2 sm:space-x-5 flex items-center w-full sm:w-auto">
-                        <select name="order"
-                            onChange={(e) => {
-                                return router.get(route('image.create', params),
-                                    { order: e.target.value },
-                                    { preserveState: true, replace: true }
-                                )
-                            }}
-                            defaultValue={params.order && params.order}
-                            className="py-2 px-3 block border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-neutral-400">
+                        <select
+                            name="order"
+                            value={activeFilters.order}
+                            onChange={(e) => updateFilter({ order: e.target.value })}
+                            className="py-2 px-3 block border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-neutral-400"
+                        >
                             <option value="popular">Popular</option>
                             <option value="latest">Latest</option>
                         </select>
                         
-                        <select name="per_page"
-                            onChange={(e) => {
-                                return router.get(route('image.create', params),
-                                    { per_page: e.target.value },
-                                    { preserveState: true, replace: true }
-                                )
-                            }}
-                            defaultValue={params.per_page && params.per_page}
-                            className="py-2 px-3 block border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-neutral-400">
+                        <select
+                            name="per_page"
+                            value={activeFilters.per_page}
+                            onChange={(e) => updateFilter({ per_page: e.target.value })}
+                            className="py-2 px-3 block border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-neutral-400"
+                        >
                             <option value="20">20</option>
                             <option value="40">40</option>
                             <option value="60">60</option>

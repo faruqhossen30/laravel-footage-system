@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useEffect, useMemo, useState } from 'react';
-import { MagnifyingGlassIcon, PlayIcon, ArrowDownTrayIcon, HeartIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, PlayIcon, ArrowDownTrayIcon, HeartIcon, ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { BoltIcon, FireIcon, StarIcon } from '@heroicons/react/24/solid';
 import Modal from '@/components/old/Modal';
 import VideoCard from '@/components/old/HomePage/VideoCard';
@@ -16,6 +16,7 @@ const HomePage = ({ videos }) => {
   const [loading, setLoading] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
   const [currentVideo, setCurrentVideo] = useState(null);
+  const [videoCopied, setVideoCopied] = useState(false);
 
   const handlePlay = (video) => {
     setCurrentVideo(video);
@@ -72,6 +73,40 @@ const HomePage = ({ videos }) => {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {currentVideo && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const path = currentVideo.disk_path || (currentVideo.file_path ? `/Volumes/Files/server/${currentVideo.file_path}` : '');
+                        if (!path) return;
+                        try {
+                          await navigator.clipboard.writeText(path);
+                          setVideoCopied(true);
+                          setTimeout(() => setVideoCopied(false), 2000);
+                        } catch (err) {
+                          console.error('Failed to copy', err);
+                        }
+                      }}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold shadow transition ${
+                        videoCopied
+                          ? 'bg-emerald-600 text-white shadow-emerald-500/30'
+                          : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                      title={currentVideo.disk_path || currentVideo.file_path}
+                    >
+                      {videoCopied ? (
+                        <>
+                          <CheckIcon className="h-4 w-4 text-white" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <ClipboardDocumentIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                          <span>Copy Path</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                   <button className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
                     <ArrowDownTrayIcon className="h-4 w-4" />
                     Download

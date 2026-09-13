@@ -8,9 +8,9 @@ import Pagination from '@/components/old/Pagination';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-export default function PizabayVideos({ items = [], existIds = [], totalHits }) {
+export default function PizabayVideos({ items = [], existIds = [], totalHits, filters = {} }) {
     const [showPlayer, setShowPlayer] = useState(false);
     const [currentVideo, setCurrentVideo] = useState(null);
 
@@ -19,19 +19,73 @@ export default function PizabayVideos({ items = [], existIds = [], totalHits }) 
         setShowPlayer(true);
     };
 
+    const params = route().params || {};
+    const activeFilters = {
+        search: filters.search ?? params.search ?? '',
+        order: filters.order ?? params.order ?? 'popular',
+        per_page: String(filters.per_page ?? params.per_page ?? '20'),
+        page: Number(filters.page ?? params.page ?? 1),
+    };
+
+    const [searchTerm, setSearchTerm] = useState(activeFilters.search);
+    const debounceTimer = useRef(null);
+
+    useEffect(() => {
+        setSearchTerm(filters.search ?? params.search ?? '');
+    }, [filters.search, params.search]);
+
+    useEffect(() => {
+        return () => {
+            if (debounceTimer.current) {
+                clearTimeout(debounceTimer.current);
+            }
+        };
+    }, []);
+
+    const updateFilter = (newValues = {}) => {
+        const merged = {
+            search: searchTerm,
+            order: activeFilters.order,
+            per_page: activeFilters.per_page,
+            ...newValues,
+        };
+
+        if (!('page' in newValues)) {
+            delete merged.page;
+        }
+
+        const queryParams = {};
+        Object.entries(merged).forEach(([k, v]) => {
+            if (v !== undefined && v !== null && String(v).trim() !== '') {
+                queryParams[k] = v;
+            }
+        });
+
+        router.get(route('video.create'), queryParams, {
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
+        });
+    };
+
     const totalVideos = totalHits ?? 500;
-    const params = route().params;
-    const perpage = Number(params.per_page ?? 10);
-    const page = Number(params.page ?? 1);
-    const lastPage = Math.ceil(totalVideos / perpage);
+    const perpage = Number(activeFilters.per_page);
+    const page = Number(activeFilters.page);
+    const lastPage = Math.max(1, Math.ceil(totalVideos / perpage));
 
     const generateLinks = () => {
         const links = [];
-        const urlParams = { ...params };
+        const baseParams = {
+            search: activeFilters.search,
+            order: activeFilters.order,
+            per_page: activeFilters.per_page,
+        };
 
         const makeUrl = (p) => {
             if (p < 1 || p > lastPage) return null;
-            return route('video.create', { ...urlParams, page: p });
+            const linkParams = { ...baseParams, page: p };
+            if (!linkParams.search) delete linkParams.search;
+            return route('video.create', linkParams);
         };
 
         // Previous
@@ -102,7 +156,7 @@ export default function PizabayVideos({ items = [], existIds = [], totalHits }) 
 
     return <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
         <Head title="Pixabay Videos" />
-        
+
         <Breadcrumb>
             <BreadcrumbList>
                 <BreadcrumbItem>
@@ -129,38 +183,49 @@ export default function PizabayVideos({ items = [], existIds = [], totalHits }) 
                     <div className="flex items-center flex-1 w-full px-3 border bg-white dark:bg-slate-900 dark:border-gray-700 rounded-md">
                         <MagnifyingGlassIcon className="w-5 h-5 text-gray-400" />
                         <input
+                            value={searchTerm}
                             onChange={(e) => {
-                                return router.get(route('video.create', params),
-                                    { search: e.target.value },
-                                    { preserveState: true, replace: true }
-                                )
+                                const val = e.target.value;
+                                setSearchTerm(val);
+                                if (debounceTimer.current) {
+                                    clearTimeout(debounceTimer.current);
+                                }
+                                debounceTimer.current = setTimeout(() => {
+                                    updateFilter({ search: val });
+                                }, 500);
                             }}
-                            defaultValue={params.search && params.search}
-                            type="text" name="search" className="py-2 block w-full dark:bg-transparent border-gray-200 dark:border-gray-700 rounded-lg text-sm border-none focus:ring-0" placeholder="Search pixabay videos..." />
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (debounceTimer.current) {
+                                        clearTimeout(debounceTimer.current);
+                                    }
+                                    updateFilter({ search: searchTerm });
+                                }
+                            }}
+                            type="text"
+                            name="search"
+                            className="py-2 block w-full dark:bg-transparent border-gray-200 dark:border-gray-700 rounded-lg text-sm border-none focus:ring-0"
+                            placeholder="Search pixabay videos..."
+                        />
                     </div>
                     <div className="space-x-2 sm:space-x-5 flex items-center w-full sm:w-auto">
-                        <select name="order"
-                            onChange={(e) => {
-                                return router.get(route('video.create', params),
-                                    { order: e.target.value },
-                                    { preserveState: true, replace: true }
-                                )
-                            }}
-                            defaultValue={params.order && params.order}
-                            className="py-2 px-3 block border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-neutral-400">
+                        <select
+                            name="order"
+                            value={activeFilters.order}
+                            onChange={(e) => updateFilter({ order: e.target.value })}
+                            className="py-2 px-3 block border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-neutral-400"
+                        >
                             <option value="popular">Popular</option>
                             <option value="latest">Latest</option>
                         </select>
-                        
-                        <select name="per_page"
-                            onChange={(e) => {
-                                return router.get(route('video.create', params),
-                                    { per_page: e.target.value },
-                                    { preserveState: true, replace: true }
-                                )
-                            }}
-                            defaultValue={params.per_page && params.per_page}
-                            className="py-2 px-3 block border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-neutral-400">
+
+                        <select
+                            name="per_page"
+                            value={activeFilters.per_page}
+                            onChange={(e) => updateFilter({ per_page: e.target.value })}
+                            className="py-2 px-3 block border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-neutral-400"
+                        >
                             <option value="10">10</option>
                             <option value="20">20</option>
                             <option value="30">30</option>
@@ -196,12 +261,12 @@ export default function PizabayVideos({ items = [], existIds = [], totalHits }) 
                             onClick={() => setData('videos', [])}
                             disabled={data.videos.length === 0}
                         >Unselect All</Button>
-                        
+
                         <span className="ml-auto text-sm text-gray-500 font-medium">
                             {data.videos.length} selected
                         </span>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {items.map((item, index) => (
                             <div
@@ -266,7 +331,7 @@ export default function PizabayVideos({ items = [], existIds = [], totalHits }) 
                             </div>
                         ))}
                     </div>
-                    
+
                     <div className="py-6 flex items-center justify-between border-t mt-6 dark:border-slate-800">
                         <Button type="submit" disabled={processing || data.videos.length === 0}>
                             Import Selected ({data.videos.length})

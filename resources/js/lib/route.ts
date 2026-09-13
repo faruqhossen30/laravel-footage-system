@@ -42,8 +42,16 @@ export function route(name?: string, params: any = {}): any {
     else if (name === 'sub-category.update') url = `/admin/sub-category/${params.id}`;
     else if (name === 'sub-category.destroy') url = `/admin/sub-category/${params.id}`;
     else if (name === 'sub-category.store') url = '/admin/sub-category';
+    else if (name === 'tag.index') url = '/admin/tag';
+    else if (name === 'tag.create') url = '/admin/tag/create';
+    else if (name === 'tag.show') url = `/admin/tag/${params.id}`;
+    else if (name === 'tag.edit') url = `/admin/tag/${params.id}/edit`;
+    else if (name === 'tag.update') url = `/admin/tag/${params.id}`;
+    else if (name === 'tag.destroy') url = `/admin/tag/${params.id}`;
+    else if (name === 'tag.store') url = '/admin/tag';
     else if (name === 'homepage') url = '/';
     else if (name === 'search') url = '/search';
+    else if (name === 'images') url = '/images';
     else url = `/${name.replace(/\./g, '/')}`;
 
     const queryParams = { ...params };

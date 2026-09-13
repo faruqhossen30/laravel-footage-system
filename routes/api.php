@@ -17,39 +17,19 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::get('videos', function (Request $request) {
-    $query = null;
-    if (isset($_GET['query']) && $_GET['query']) {
-        $query = $_GET['query'];
-    }
-
-    $per_page = null;
-    if (isset($_GET['per_page']) && $_GET['per_page']) {
-        $per_page = $_GET['per_page'];
-    }
+    $search = $request->input('query');
+    $perPage = $request->input('per_page');
 
     $query = Video::query();
 
-    $tagIds = $request->input('tag_ids', []);
-    $subcategoryIds = $request->input('subcategory_ids', []);
-    $categoryIds = $request->input('category_ids', []);
-
-    if (! empty($tagIds)) {
-        $query->whereHas('tags', function ($q) use ($tagIds) {
-            $q->whereIn('tags.id', $tagIds);
-        });
-    } elseif (! empty($subcategoryIds)) {
-        $query->whereHas('subCategories', function ($q) use ($subcategoryIds) {
-            $q->whereIn('sub_categories.id', $subcategoryIds);
-        });
-    } elseif (! empty($categoryIds)) {
-        $query->whereHas('categories', function ($q) use ($categoryIds) {
-            $q->whereIn('categories.id', $categoryIds);
+    if (! empty($search)) {
+        $query->whereHas('tags', function ($q) use ($search) {
+            $q->whereRaw('LOWER(name) like ?', ['%'.strtolower($search).'%']);
         });
     }
 
     $videos = $query
-        ->inRandomOrder()
-        ->paginate($per_page ?? 1000)
+        ->paginate($perPage ?? 5)
         ->appends(request()->query());
 
     return VideoResource::collection($videos);

@@ -16,12 +16,14 @@ class SubCategoryController extends Controller
     public function index()
     {
         $subCategories = SubCategory::with('category')->paginate(10);
+
         return Inertia::render('admin/sub-category/index', ['subCategories' => $subCategories]);
     }
 
     public function create()
     {
         $categories = Category::select('id', 'name')->get();
+
         return Inertia::render('admin/sub-category/create', ['categories' => $categories]);
     }
 
@@ -60,6 +62,7 @@ class SubCategoryController extends Controller
     {
         $subCategory = SubCategory::with('category')->firstWhere('id', $id);
         $categories = Category::select('id', 'name')->get();
+
         return Inertia::render('admin/sub-category/edit', ['subCategory' => $subCategory, 'categories' => $categories]);
     }
 
@@ -101,6 +104,7 @@ class SubCategoryController extends Controller
     public function destroy(string $id)
     {
         SubCategory::where('id', $id)->delete();
+
         return redirect()->route('sub-category.index');
     }
 }

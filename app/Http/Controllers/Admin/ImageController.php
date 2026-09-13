@@ -64,36 +64,21 @@ class ImageController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        $per_page = null;
-        if (isset($_GET['per_page']) && $_GET['per_page']) {
-            $per_page = $_GET['per_page'];
-        }
-
-        $page = null;
-        if (isset($_GET['page']) && $_GET['page']) {
-            $page = $_GET['page'];
-        }
-
-        $order = null;
-        if (isset($_GET['order']) && $_GET['order']) {
-            $order = $_GET['order'];
-        }
-
-        $search = null;
-        if (isset($_GET['search']) && $_GET['search']) {
-            $search = $_GET['search'];
-        }
+        $per_page = $request->query('per_page', 20);
+        $page = $request->query('page', 1);
+        $order = $request->query('order', 'popular');
+        $search = $request->query('search', '');
 
         $key = env('PIXABAY_API_KEY');
 
         $params = [
             'key' => $key,
             'q' => $search,
-            'order' => $order ?? 'popular',
-            'page' => $page ?? 1,
-            'per_page' => $per_page ?? 20, // Images page size can be 20
+            'order' => $order ?: 'popular',
+            'page' => $page ?: 1,
+            'per_page' => $per_page ?: 20, // Images page size can be 20
         ];
 
         $queryParams = http_build_query($params);
@@ -112,6 +97,12 @@ class ImageController extends Controller
                 'items' => $hits,
                 'existIds' => $existIds,
                 'totalHits' => $data['totalHits'] ?? 0,
+                'filters' => [
+                    'search' => $search,
+                    'order' => $order ?: 'popular',
+                    'per_page' => (string) ($per_page ?: 20),
+                    'page' => (int) ($page ?: 1),
+                ],
             ]
         );
     }

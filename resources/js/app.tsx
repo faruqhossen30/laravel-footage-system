@@ -12,7 +12,7 @@ createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
         switch (true) {
-            case name === 'welcome' || name === 'home-page' || name === 'search-page':
+            case name === 'welcome' || name === 'home-page' || name === 'search-page' || name === 'images-page':
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;

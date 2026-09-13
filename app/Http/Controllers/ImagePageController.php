@@ -3,34 +3,35 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Image;
 use App\Models\Tag;
-use App\Models\Video;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Inertia\Response;
 
-class SearchController extends Controller
+class ImagePageController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
         $search = null;
         if ($request->has('search')) {
             $search = trim($request->get('search'));
         }
 
-        $per_page = 10;
+        $perPage = 12;
         if ($request->has('show')) {
-            $per_page = (int) $request->get('show');
+            $perPage = (int) $request->get('show');
         }
 
         $order = $request->get('order', 'desc') === 'asc' ? 'asc' : 'desc';
 
-        $videos = Video::query()->orderBy('id', $order);
+        $images = Image::query()->orderBy('id', $order);
 
         if ($search) {
             $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
 
-            $videos->where(function ($query) use ($search, $likeOperator) {
+            $images->where(function ($query) use ($search, $likeOperator) {
                 $query->where('title', $likeOperator, "%{$search}%")
                     ->orWhereHas('tags', function ($tagsQuery) use ($search, $likeOperator) {
                         $terms = array_filter(explode(' ', $search));
@@ -43,44 +44,52 @@ class SearchController extends Controller
             });
         }
 
-        if ($request->has('category')) {
+        if ($request->has('category') && $request->filled('category')) {
             $categorySlug = $request->get('category');
-            $videos->whereHas('categories', function ($q) use ($categorySlug) {
+            $images->whereHas('categories', function ($q) use ($categorySlug) {
                 $q->where('slug', $categorySlug);
             });
         }
 
-        if ($request->has('subcategory')) {
+        if ($request->has('subcategory') && $request->filled('subcategory')) {
             $subCategorySlug = $request->get('subcategory');
-            $videos->whereHas('subCategories', function ($q) use ($subCategorySlug) {
+            $images->whereHas('subCategories', function ($q) use ($subCategorySlug) {
                 $q->where('slug', $subCategorySlug);
             });
         }
 
-        if ($request->has('tag')) {
+        if ($request->has('tag') && $request->filled('tag')) {
             $tagSlug = $request->get('tag');
-            $videos->whereHas('tags', function ($q) use ($tagSlug) {
+            $images->whereHas('tags', function ($q) use ($tagSlug) {
                 $q->where('slug', $tagSlug);
             });
         }
 
-        $videos = $videos->with('tags')->paginate($per_page)->appends($request->query());
+        $images = $images->with(['tags', 'categories', 'subCategories'])
+            ->paginate($perPage)
+            ->appends($request->query());
 
         $categories = Category::with([
             'subCategories' => function ($query) {
-                $query->where('status', true)->withCount('videos');
+                $query->where('status', true)->withCount('images');
             },
         ])
-            ->withCount('videos')
+            ->withCount('images')
             ->where('status', true)
             ->get();
-        $tags = Tag::where('status', true)->limit(20)->get();
 
-        return Inertia::render('search-page', [
-            'videos' => $videos,
+        $tags = Tag::where('status', true)
+            ->withCount('images')
+            ->orderByDesc('images_count')
+            ->limit(20)
+            ->get();
+
+        return Inertia::render('images-page', [
+            'images' => $images,
             'categories' => $categories,
             'tags' => $tags,
             'filters' => $request->only(['search', 'show', 'order', 'category', 'subcategory', 'tag']),
+            'disk_file_location' => env('DISK_FILE_LOCATION', '/Volumes/Files/server/'),
         ]);
     }
 }

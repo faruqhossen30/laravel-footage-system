@@ -16,11 +16,11 @@ class VideoResource extends JsonResource
     {
         // return parent::toArray($request);
         return [
-            "id"           => $this->id,
-            "title"        => $this->title,
-            "file_name"    =>  $this->file_name,
-            "file_path"    => env('DISK_FILE_LOCATION') . $this->file_path,
-            "duration"     => $this->duration,
+            'id' => $this->id,
+            'title' => $this->title,
+            'file_name' => $this->file_name,
+            'file_path' => env('DISK_FILE_LOCATION').$this->file_path,
+            'duration' => $this->duration,
             // "thumbnail"    => public_path($this->thumbnail),
             // "video_quality" => $this->video_quality,
             // "size"         => $this->size,

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\HomePageController;
+use App\Http\Controllers\ImagePageController;
 use App\Http\Controllers\SearchController;
 use App\Models\Image;
 use App\Models\Video;
@@ -8,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomePageController::class, 'homePage'])->name('homepage');
 Route::get('/search', [SearchController::class, 'index'])->name('search');
+Route::get('/images', [ImagePageController::class, 'index'])->name('images');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {

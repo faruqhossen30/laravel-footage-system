@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class VideoCategory extends Model
 {
@@ -13,5 +12,4 @@ class VideoCategory extends Model
         'video_id',
         'category_id',
     ];
-
 }
