@@ -14,8 +14,10 @@ class SearchController extends Controller
     public function index(Request $request)
     {
         $search = null;
-        if ($request->has('search')) {
+        if ($request->has('search') && $request->filled('search')) {
             $search = trim($request->get('search'));
+        } elseif ($request->has('query') && $request->filled('query')) {
+            $search = trim($request->get('query'));
         }
 
         $per_page = 10;
@@ -31,15 +33,20 @@ class SearchController extends Controller
             $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
 
             $videos->where(function ($query) use ($search, $likeOperator) {
-                $query->where('title', $likeOperator, "%{$search}%")
-                    ->orWhereHas('tags', function ($tagsQuery) use ($search, $likeOperator) {
-                        $terms = array_filter(explode(' ', $search));
-                        $tagsQuery->where(function ($q) use ($terms, $likeOperator) {
-                            foreach ($terms as $term) {
-                                $q->orWhere('name', $likeOperator, "%{$term}%");
-                            }
-                        });
+                $terms = array_filter(explode(' ', $search));
+
+                $query->where(function ($titleQuery) use ($search, $terms, $likeOperator) {
+                    $titleQuery->where('title', $likeOperator, "%{$search}%");
+                    foreach ($terms as $term) {
+                        $titleQuery->orWhere('title', $likeOperator, "%{$term}%");
+                    }
+                })->orWhereHas('tags', function ($tagsQuery) use ($terms, $likeOperator) {
+                    $tagsQuery->where(function ($q) use ($terms, $likeOperator) {
+                        foreach ($terms as $term) {
+                            $q->orWhere('name', $likeOperator, "%{$term}%");
+                        }
                     });
+                });
             });
         }
 
@@ -64,7 +71,7 @@ class SearchController extends Controller
             });
         }
 
-        $videos = $videos->with('tags')->paginate($per_page)->appends($request->query());
+        $videos = $videos->with(['tags', 'categories', 'subCategories'])->paginate($per_page)->appends($request->query());
 
         $categories = Category::with([
             'subCategories' => function ($query) {
@@ -74,13 +81,19 @@ class SearchController extends Controller
             ->withCount('videos')
             ->where('status', true)
             ->get();
-        $tags = Tag::where('status', true)->limit(20)->get();
+        $tags = Tag::where('status', true)
+            ->has('videos')
+            ->limit(20)
+            ->get();
 
         return Inertia::render('search-page', [
             'videos' => $videos,
             'categories' => $categories,
             'tags' => $tags,
-            'filters' => $request->only(['search', 'show', 'order', 'category', 'subcategory', 'tag']),
+            'filters' => array_merge(
+                $request->only(['show', 'order', 'category', 'subcategory', 'tag']),
+                ['search' => $search]
+            ),
         ]);
     }
 }

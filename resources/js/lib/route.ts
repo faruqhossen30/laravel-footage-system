@@ -14,6 +14,7 @@ export function route(name?: string, params: any = {}): any {
 
     if (name === 'video.index') url = '/admin/video';
     else if (name === 'video.create') url = '/admin/video/create';
+    else if (name === 'video.search') url = '/admin/video/search';
     else if (name === 'video.edit') url = `/admin/video/${params.id}`;
     else if (name === 'video.update') url = `/admin/video/${params.id}`;
     else if (name === 'video.destroy') url = `/admin/video/${params.id}`;

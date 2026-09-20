@@ -63,4 +63,22 @@ test('images can be searched by tag name', function () {
     $response = $this->getJson('/api/images?query=ocean');
     $response->assertStatus(200);
     $response->assertJsonCount(0, 'data');
+
+    // 8. Request image list with multi-word query (term splitting)
+    $response = $this->getJson('/api/images?query=Sunny Nature Fresh');
+    $response->assertStatus(200);
+    $response->assertJsonCount(1, 'data');
+    $response->assertJsonPath('data.0.title', 'A beautiful forest');
+
+    // 9. Request image list by title search
+    $response = $this->getJson('/api/images?query=Skyline');
+    $response->assertStatus(200);
+    $response->assertJsonCount(1, 'data');
+    $response->assertJsonPath('data.0.title', 'New York Skyline');
+
+    // 10. Request image list using 'search' parameter instead of 'query'
+    $response = $this->getJson('/api/images?search=forest');
+    $response->assertStatus(200);
+    $response->assertJsonCount(1, 'data');
+    $response->assertJsonPath('data.0.title', 'A beautiful forest');
 });

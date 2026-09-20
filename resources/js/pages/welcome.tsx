@@ -10,11 +10,11 @@ export default function Welcome() {
             <Head title="Welcome" />
             <div className="flex min-h-screen flex-col items-center bg-[#FDFDFC] p-6 text-[#1b1b18] lg:justify-center lg:p-8 dark:bg-[#0a0a0a]">
                 <header className="mb-6 w-full max-w-[335px] text-sm not-has-[nav]:hidden lg:max-w-4xl">
-                    <nav className="flex items-center justify-end gap-4">
+                    <nav className="flex items-center justify-end gap-3">
                         {auth.user ? (
                             <Link
                                 href={dashboard()}
-                                className="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
+                                className="inline-block rounded-md bg-[#1b1b18] px-5 py-1.5 text-sm font-medium leading-normal text-white hover:bg-black dark:bg-[#eeeeec] dark:text-[#1C1C1A] dark:hover:bg-white shadow-sm transition-colors"
                             >
                                 Dashboard
                             </Link>
@@ -22,13 +22,13 @@ export default function Welcome() {
                             <>
                                 <Link
                                     href={login()}
-                                    className="inline-block rounded-sm border border-transparent px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#19140035] dark:text-[#EDEDEC] dark:hover:border-[#3E3E3A]"
+                                    className="inline-block rounded-md bg-[#1b1b18] px-5 py-1.5 text-sm font-medium leading-normal text-white hover:bg-black dark:bg-[#eeeeec] dark:text-[#1C1C1A] dark:hover:bg-white shadow-sm transition-colors"
                                 >
                                     Log in
                                 </Link>
                                 <Link
                                     href={register()}
-                                    className="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
+                                    className="inline-block rounded-md border border-[#19140035] px-5 py-1.5 text-sm font-medium leading-normal text-[#1b1b18] hover:border-[#1915014a] hover:bg-gray-50 dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b] dark:hover:bg-[#1f1f1d] transition-colors"
                                 >
                                     Register
                                 </Link>
@@ -111,14 +111,30 @@ export default function Welcome() {
                                     </span>
                                 </li>
                             </ul>
-                            <ul className="flex gap-3 text-sm leading-normal">
+                            <ul className="flex flex-wrap items-center gap-3 text-sm leading-normal">
+                                <li>
+                                    <Link
+                                        href={auth.user ? dashboard() : login()}
+                                        className="inline-flex items-center gap-2 rounded-md bg-[#f53003] hover:bg-[#d62a02] px-5 py-2 text-sm font-semibold leading-normal text-white shadow transition-colors dark:bg-[#FF4433] dark:hover:bg-[#e63626]"
+                                    >
+                                        {auth.user ? 'Go to Dashboard' : 'Log in to Dashboard'}
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        href="/"
+                                        className="inline-block rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium leading-normal text-[#1b1b18] hover:bg-gray-50 dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC] dark:hover:bg-[#1f1f1d] transition-colors"
+                                    >
+                                        Browse Footage
+                                    </Link>
+                                </li>
                                 <li>
                                     <a
                                         href="https://cloud.laravel.com"
                                         target="_blank"
-                                        className="inline-block rounded-sm border border-black bg-[#1b1b18] px-5 py-1.5 text-sm leading-normal text-white hover:border-black hover:bg-black dark:border-[#eeeeec] dark:bg-[#eeeeec] dark:text-[#1C1C1A] dark:hover:border-white dark:hover:bg-white"
+                                        className="inline-block rounded-md border border-transparent px-4 py-2 text-sm leading-normal text-[#706f6c] hover:text-[#1b1b18] dark:text-[#A1A09A] dark:hover:text-[#EDEDEC]"
                                     >
-                                        Deploy now
+                                        Deploy
                                     </a>
                                 </li>
                             </ul>

@@ -10,6 +10,7 @@ use App\Http\Resources\VideoResource;
 use App\Models\Image;
 use App\Models\Video;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
@@ -17,14 +18,24 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::get('videos', function (Request $request) {
-    $search = $request->input('query');
+    $search = $request->input('query') ?? $request->input('search');
     $perPage = $request->input('per_page');
 
     $query = Video::query();
 
     if (! empty($search)) {
-        $query->whereHas('tags', function ($q) use ($search) {
-            $q->whereRaw('LOWER(name) like ?', ['%'.strtolower($search).'%']);
+        $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+
+        $query->where(function ($q) use ($search, $likeOperator) {
+            $q->where('title', $likeOperator, "%{$search}%")
+                ->orWhereHas('tags', function ($tagsQuery) use ($search, $likeOperator) {
+                    $terms = array_filter(explode(' ', $search));
+                    $tagsQuery->where(function ($subQ) use ($terms, $likeOperator) {
+                        foreach ($terms as $term) {
+                            $subQ->orWhere('name', $likeOperator, "%{$term}%");
+                        }
+                    });
+                });
         });
     }
 
@@ -42,8 +53,18 @@ Route::get('images', function (Request $request) {
     $query = Image::query();
 
     if (! empty($search)) {
-        $query->whereHas('tags', function ($q) use ($search) {
-            $q->whereRaw('LOWER(name) like ?', ['%'.strtolower($search).'%']);
+        $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+
+        $query->where(function ($q) use ($search, $likeOperator) {
+            $q->where('title', $likeOperator, "%{$search}%")
+                ->orWhereHas('tags', function ($tagsQuery) use ($search, $likeOperator) {
+                    $terms = array_filter(explode(' ', $search));
+                    $tagsQuery->where(function ($subQ) use ($terms, $likeOperator) {
+                        foreach ($terms as $term) {
+                            $subQ->orWhere('name', $likeOperator, "%{$term}%");
+                        }
+                    });
+                });
         });
     }
 

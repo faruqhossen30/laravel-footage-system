@@ -290,4 +290,59 @@ class VideoController extends Controller
 
         return redirect()->route('video.index');
     }
+
+    /**
+     * Search videos by absolute disk path, relative path, or filename.
+     */
+    public function searchByPath(Request $request)
+    {
+        $rawPath = $request->string('path')->trim()->toString();
+        // Remove enclosing quotes if user pasted e.g. "/Volumes/Files/server/videos/370013_medium.mp4"
+        $cleanedPath = trim($rawPath, " \t\n\r\0\x0B\"'");
+
+        $query = Video::with([
+            'categories:id,name',
+            'subCategories:id,name,category_id',
+            'tags:id,name',
+        ]);
+
+        if ($cleanedPath !== '') {
+            $diskLocation = env('DISK_FILE_LOCATION', '/Volumes/Files/server/');
+            $normalizedDiskLocation = rtrim($diskLocation, '/').'/';
+
+            // Extract relative path if the input starts with DISK_FILE_LOCATION or /Volumes/Files/server/
+            $relativePath = $cleanedPath;
+            if (Str::startsWith($cleanedPath, $normalizedDiskLocation)) {
+                $relativePath = Str::after($cleanedPath, $normalizedDiskLocation);
+            } elseif (Str::startsWith($cleanedPath, '/Volumes/Files/server/')) {
+                $relativePath = Str::after($cleanedPath, '/Volumes/Files/server/');
+            } elseif (Str::startsWith($cleanedPath, '/Volumes/Files/server')) {
+                $relativePath = ltrim(Str::after($cleanedPath, '/Volumes/Files/server'), '/');
+            }
+
+            $basename = basename($cleanedPath);
+            $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+
+            $query->where(function ($q) use ($cleanedPath, $relativePath, $basename, $likeOperator) {
+                $q->where('file_path', $cleanedPath)
+                    ->orWhere('file_path', $relativePath)
+                    ->orWhere('file_path', $likeOperator, "%{$relativePath}%")
+                    ->orWhere('file_path', $likeOperator, "%{$basename}%")
+                    ->orWhere('file_name', $likeOperator, "%{$basename}%")
+                    ->orWhere('file_name', $likeOperator, "%{$cleanedPath}%")
+                    ->orWhere('title', $likeOperator, "%{$basename}%");
+            })->latest('id');
+        } else {
+            $query->whereRaw('1 = 0');
+        }
+
+        $videos = $query->paginate(15)->withQueryString();
+
+        return Inertia::render('admin/video/search', [
+            'videos' => $videos,
+            'filters' => [
+                'path' => $rawPath,
+            ],
+        ]);
+    }
 }

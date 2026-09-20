@@ -1,9 +1,10 @@
 import { route } from '@/lib/route';
 import { BoltIcon, FireIcon, MagnifyingGlassIcon, StarIcon } from '@heroicons/react/24/outline';
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import React, { useState } from 'react'
 
 const HeroSection = () => {
+    const { auth } = usePage().props;
     const params = route().params;
     const TABS = [
         { key: 'latest', label: 'Latest', icon: BoltIcon },
@@ -18,7 +19,30 @@ const HeroSection = () => {
             {/* Hero */}
             <section className="relative overflow-hidden border-b border-gray-200 dark:border-gray-800">
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 opacity-20 dark:opacity-25" />
-                <div className="relative mx-auto max-w-7xl px-6 py-16">
+                <div className="relative mx-auto max-w-7xl px-6 py-8 sm:py-12">
+                    {/* Top Navigation Bar */}
+                    <div className="flex items-center justify-between mb-8 pb-3 border-b border-gray-200/50 dark:border-gray-800/50">
+                        <Link href={route('homepage')} className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+                            Footage System
+                        </Link>
+                        <div className="flex items-center gap-3">
+                            {auth?.user ? (
+                                <Link
+                                    href={route('dashboard')}
+                                    className="inline-flex items-center rounded-full bg-indigo-600 hover:bg-indigo-700 px-4 py-1.5 text-xs font-semibold text-white shadow transition"
+                                >
+                                    Dashboard
+                                </Link>
+                            ) : (
+                                <Link
+                                    href="/login"
+                                    className="inline-flex items-center rounded-full bg-white/90 border border-gray-300 dark:border-gray-700 px-4 py-1.5 text-xs font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:bg-gray-900/90 dark:hover:bg-gray-800 shadow-sm transition"
+                                >
+                                    Log in
+                                </Link>
+                            )}
+                        </div>
+                    </div>
                     <div className="mx-auto max-w-3xl text-center">
                         <div className="mb-5 inline-flex items-center rounded-full bg-white/90 p-1 shadow-sm backdrop-blur dark:bg-gray-900/90 border border-gray-200 dark:border-gray-800">
                             <Link

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { ArrowDownTrayIcon, PlayIcon, ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
 
-const VideoCard = ({ video, onPlay }) => {
+const VideoCard = ({ video, onPlay, onTagClick, diskFileLocation }) => {
     const [copied, setCopied] = useState(false);
 
     // Simple time format helper
@@ -13,7 +13,7 @@ const VideoCard = ({ video, onPlay }) => {
     };
 
     // Full disk path according to VideoResource: env('DISK_FILE_LOCATION') . $video->file_path
-    const diskPath = video.disk_path || (video.file_path ? `/Volumes/Files/server/${video.file_path}` : '');
+    const diskPath = video.disk_path || (video.file_path ? `${diskFileLocation || '/Volumes/Files/server/'}${video.file_path}` : '');
 
     const handleCopyPath = async (e) => {
         e.stopPropagation();
@@ -30,7 +30,7 @@ const VideoCard = ({ video, onPlay }) => {
 
     return (
         <div className="group relative overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all">
-            <div className="aspect-video w-full overflow-hidden cursor-pointer" onClick={() => onPlay(video)}>
+            <div className="aspect-video w-full overflow-hidden cursor-pointer bg-gray-200 dark:bg-gray-900" onClick={() => onPlay(video)}>
                 <img
                     src={'/server/' + video.thumbnail}
                     alt={video.title}
@@ -40,12 +40,16 @@ const VideoCard = ({ video, onPlay }) => {
             </div>
             {/* Top-left badges */}
             <div className="absolute left-3 top-3 flex items-center gap-2 pointer-events-none">
-                <span className="rounded bg-black/60 px-2 py-1 text-xs text-white">
-                    {formatDuration(video.duration)}
-                </span>
-                <span className="rounded bg-black/60 px-2 py-1 text-xs text-white">
-                    <ArrowDownTrayIcon className="h-4 w-4" />
-                </span>
+                {video.duration ? (
+                    <span className="rounded bg-black/60 px-2 py-0.5 text-xs text-white">
+                        {formatDuration(video.duration)}
+                    </span>
+                ) : null}
+                {video.width && video.height ? (
+                    <span className="rounded bg-black/60 px-2 py-0.5 text-xs text-white">
+                        {video.width}×{video.height}
+                    </span>
+                ) : null}
             </div>
 
             {/* Hover overlay */}
@@ -87,11 +91,33 @@ const VideoCard = ({ video, onPlay }) => {
                 )}
             </div>
 
-            {/* Bottom content */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3 pointer-events-none">
-                <div className="flex items-center justify-between">
-                    <p className="text-gray-100 text-sm line-clamp-1">{video.title}</p>
+            {/* Bottom content: Title and Tags like ImageCard */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2.5 pointer-events-none">
+                <div className="flex items-center justify-between mb-1">
+                    <p className="text-gray-100 text-xs font-medium line-clamp-1">
+                        {video.title || (video.tags && video.tags.length > 0 ? video.tags.slice(0, 2).map((t) => t.name).join(', ') : 'Stock Video')}
+                    </p>
                 </div>
+                {video.tags && video.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                        {video.tags.slice(0, 3).map((tag) => (
+                            <button
+                                key={tag.id}
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onTagClick) {
+                                        onTagClick(tag.slug);
+                                    }
+                                }}
+                                className="pointer-events-auto text-[10px] text-gray-300 hover:text-white transition"
+                                title={`Filter by tag: ${tag.name}`}
+                            >
+                                #{tag.name}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -1,7 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import { dashboard } from '@/routes';
 import DashbardCard from '@/components/old/Dashboard/DashbardCard';
-import { PlayCircleIcon, ArrowDownTrayIcon, XCircleIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import { PlayCircleIcon, ArrowDownTrayIcon, XCircleIcon, PhotoIcon, HomeIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
+import { Button } from '@/components/ui/button';
 import { route } from '@/lib/route';
 
 export default function Dashboard({ videos, images }: { videos?: any, images?: any }) {
@@ -9,6 +10,20 @@ export default function Dashboard({ videos, images }: { videos?: any, images?: a
         <>
             <Head title="Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-gray-200 dark:border-gray-800">
+                    <div>
+                        <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Dashboard</h1>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Overview of footage downloads, library stats, and media assets</p>
+                    </div>
+                    <Button variant="outline" size="sm" asChild className="gap-2 shadow-xs">
+                        <Link href={route('homepage')}>
+                            <HomeIcon className="w-4 h-4 text-indigo-500" />
+                            <span>Go to Homepage</span>
+                            <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5 text-gray-400" />
+                        </Link>
+                    </Button>
+                </div>
+
                 {videos && (
                     <>
                         <h2 className="text-lg font-semibold mt-2">Videos</h2>

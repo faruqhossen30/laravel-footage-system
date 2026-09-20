@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid, VideoIcon, TagsIcon, ListTreeIcon, ImageIcon, TagIcon } from 'lucide-react';
+import { BookOpen, FolderGit2, LayoutGrid, VideoIcon, TagsIcon, ListTreeIcon, ImageIcon, TagIcon, Search } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -26,6 +26,11 @@ const mainNavItems: NavItem[] = [
         title: 'Videos',
         href: '/admin/video',
         icon: VideoIcon,
+    },
+    {
+        title: 'Search by Path',
+        href: '/admin/video/search',
+        icon: Search,
     },
     {
         title: 'Images',
