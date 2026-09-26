@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DiskPath;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
@@ -26,7 +27,7 @@ class Image extends Model
 
     public function getDiskPathAttribute(): ?string
     {
-        return $this->file_path ? env('DISK_FILE_LOCATION', '/Volumes/Files/server/').$this->file_path : null;
+        return DiskPath::resolve($this->file_path);
     }
 
     protected function casts(): array

@@ -7,8 +7,10 @@ use App\Jobs\DownloadImage;
 use App\Models\Image;
 use App\Models\SubCategory;
 use App\Models\Tag;
+use App\Support\DiskPath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ImageApiController extends Controller
@@ -117,8 +119,10 @@ class ImageApiController extends Controller
         $file_exist = false;
 
         if ($image && $image->file_path) {
-            $file_path = env('DISK_FILE_LOCATION') ? (env('DISK_FILE_LOCATION').$image->file_path) : Storage::disk('public')->path($image->file_path);
-            $file_exist = file_exists($file_path);
+            $file_path = DiskPath::root() !== ''
+                ? DiskPath::resolve($image->file_path)
+                : Storage::disk('public')->path($image->file_path);
+            $file_exist = $file_path ? file_exists($file_path) : false;
         }
 
         return response()->json([
@@ -177,12 +181,13 @@ class ImageApiController extends Controller
             $images = Image::inRandomOrder()->limit(3)->get();
         }
 
-        $diskLocation = env('DISK_FILE_LOCATION', '');
-        $data = $images->map(function ($image) use ($diskLocation) {
+        $data = $images->map(function ($image) {
             return [
                 'id' => $image->id,
                 'title' => $image->title,
-                'image_link' => $image->file_path ? ($diskLocation ? $diskLocation.$image->file_path : asset('storage/'.$image->file_path)) : null,
+                'image_link' => $image->file_path
+                    ? (DiskPath::root() !== '' ? DiskPath::resolve($image->file_path) : asset('storage/'.$image->file_path))
+                    : null,
                 'width' => $image->width,
                 'height' => $image->height,
                 'size' => $image->size,

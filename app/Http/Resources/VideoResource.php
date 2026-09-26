@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\DiskPath;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -19,7 +20,7 @@ class VideoResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'file_name' => $this->file_name,
-            'file_path' => env('DISK_FILE_LOCATION').$this->file_path,
+            'file_path' => DiskPath::resolve($this->file_path),
             'duration' => $this->duration,
             // "thumbnail"    => public_path($this->thumbnail),
             // "video_quality" => $this->video_quality,

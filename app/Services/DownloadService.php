@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Image;
 use App\Models\Video;
+use App\Support\DiskPath;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -18,12 +19,9 @@ class DownloadService
         }
 
         $basename = basename(parse_url($url, PHP_URL_PATH) ?? '') ?: ('image_'.$image->id.'.jpg');
-        $diskLocation = (string) env('DISK_FILE_LOCATION', '');
-        if ($diskLocation === '') {
-            $root = Storage::disk('public')->path('images');
-        } else {
-            $root = rtrim($diskLocation, '/').'/images';
-        }
+        $root = DiskPath::root() !== ''
+            ? DiskPath::dir('images')
+            : Storage::disk('public')->path('images');
 
         if (! is_dir($root)) {
             mkdir($root, 0755, true);
@@ -54,12 +52,9 @@ class DownloadService
 
         $basename = basename(parse_url($url, PHP_URL_PATH) ?? '') ?: ('img_thumb_'.$image->id.'.jpg');
 
-        $diskLocation = (string) env('DISK_FILE_LOCATION', '');
-        if ($diskLocation !== '') {
-            $root = rtrim($diskLocation, '/').'/thumbnails';
-        } else {
-            $root = public_path('thumbnails');
-        }
+        $root = DiskPath::root() !== ''
+            ? DiskPath::dir('thumbnails')
+            : public_path('thumbnails');
 
         if (! is_dir($root)) {
             mkdir($root, 0755, true);
@@ -92,12 +87,9 @@ class DownloadService
         }
 
         $basename = basename(parse_url($url, PHP_URL_PATH) ?? '') ?: ('video_'.$video->id.'.mp4');
-        $diskLocation = (string) env('DISK_FILE_LOCATION', '');
-        if ($diskLocation === '') {
-            $root = Storage::disk('public')->path('videos');
-        } else {
-            $root = rtrim($diskLocation, '/').'/videos';
-        }
+        $root = DiskPath::root() !== ''
+            ? DiskPath::dir('videos')
+            : Storage::disk('public')->path('videos');
 
         if (! is_dir($root)) {
             mkdir($root, 0755, true);
@@ -132,12 +124,9 @@ class DownloadService
 
         $basename = basename(parse_url($url, PHP_URL_PATH) ?? '') ?: ('thumb_'.$video->id.'.jpg');
 
-        $diskLocation = (string) env('DISK_FILE_LOCATION', '');
-        if ($diskLocation !== '') {
-            $root = rtrim($diskLocation, '/').'/thumbnails';
-        } else {
-            $root = public_path('thumbnails');
-        }
+        $root = DiskPath::root() !== ''
+            ? DiskPath::dir('thumbnails')
+            : public_path('thumbnails');
 
         if (! is_dir($root)) {
             mkdir($root, 0755, true);

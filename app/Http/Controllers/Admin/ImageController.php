@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Image;
 use App\Models\SubCategory;
 use App\Models\Tag;
+use App\Support\DiskPath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
@@ -265,7 +266,13 @@ class ImageController extends Controller
 
     public function destroy(string $id)
     {
-        Image::where('id', $id)->delete();
+        $image = Image::find($id);
+
+        if ($image) {
+            DiskPath::deleteFile($image->file_path);
+            DiskPath::deleteFile($image->thumbnail);
+            $image->delete();
+        }
 
         return redirect()->route('image.index');
     }

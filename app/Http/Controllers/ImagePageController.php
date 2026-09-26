@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Image;
 use App\Models\Tag;
+use App\Support\DiskPath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -89,7 +90,7 @@ class ImagePageController extends Controller
             'categories' => $categories,
             'tags' => $tags,
             'filters' => $request->only(['search', 'show', 'order', 'category', 'subcategory', 'tag']),
-            'disk_file_location' => env('DISK_FILE_LOCATION', '/Volumes/Files/server/'),
+            'disk_file_location' => DiskPath::root(),
         ]);
     }
 }

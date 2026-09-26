@@ -17,8 +17,8 @@ const ImageCard = ({ image, onPreview, diskFileLocation }) => {
     const imageSrc = image.thumbnail ? `/server/${image.thumbnail}` : (image.file_path ? `/server/${image.file_path}` : '');
     const downloadSrc = image.file_path ? `/server/${image.file_path}` : imageSrc;
 
-    // Full disk path according to ImageResource: env('DISK_FILE_LOCATION') . $image->file_path
-    const diskPath = image.disk_path || (image.file_path ? `${diskFileLocation || '/Volumes/Files/server/'}${image.file_path}` : '');
+    // Full disk path according to ImageResource or disk_path attribute
+    const diskPath = image.disk_path || (image.file_path ? `${diskFileLocation || ''}${image.file_path}` : '');
 
     const handleCopyPath = async (e) => {
         e.stopPropagation();

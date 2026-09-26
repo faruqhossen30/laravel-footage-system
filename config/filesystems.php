@@ -60,7 +60,15 @@ return [
             'report' => false,
         ],
 
+        'footage' => [
+            'driver' => 'local',
+            'root' => env('DISK_FILE_LOCATION', '/Volumes/Files/server/'),
+            'throw' => false,
+        ],
+
     ],
+
+    'disk_file_location' => env('DISK_FILE_LOCATION', '/Volumes/Files/server/'),
 
     /*
     |--------------------------------------------------------------------------

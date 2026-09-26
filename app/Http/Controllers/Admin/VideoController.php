@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\SubCategory;
 use App\Models\Tag;
 use App\Models\Video;
+use App\Support\DiskPath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
@@ -286,7 +287,13 @@ class VideoController extends Controller
      */
     public function destroy(string $id)
     {
-        Video::where('id', $id)->delete();
+        $video = Video::find($id);
+
+        if ($video) {
+            DiskPath::deleteFile($video->file_path);
+            DiskPath::deleteFile($video->thumbnail);
+            $video->delete();
+        }
 
         return redirect()->route('video.index');
     }
@@ -307,20 +314,8 @@ class VideoController extends Controller
         ]);
 
         if ($cleanedPath !== '') {
-            $diskLocation = env('DISK_FILE_LOCATION', '/Volumes/Files/server/');
-            $normalizedDiskLocation = rtrim($diskLocation, '/').'/';
-
-            // Extract relative path if the input starts with DISK_FILE_LOCATION or /Volumes/Files/server/
-            $relativePath = $cleanedPath;
-            if (Str::startsWith($cleanedPath, $normalizedDiskLocation)) {
-                $relativePath = Str::after($cleanedPath, $normalizedDiskLocation);
-            } elseif (Str::startsWith($cleanedPath, '/Volumes/Files/server/')) {
-                $relativePath = Str::after($cleanedPath, '/Volumes/Files/server/');
-            } elseif (Str::startsWith($cleanedPath, '/Volumes/Files/server')) {
-                $relativePath = ltrim(Str::after($cleanedPath, '/Volumes/Files/server'), '/');
-            }
-
-            $basename = basename($cleanedPath);
+            $relativePath = DiskPath::cleanRelative($cleanedPath);
+            $basename = basename(str_replace('\\', '/', $cleanedPath));
             $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
 
             $query->where(function ($q) use ($cleanedPath, $relativePath, $basename, $likeOperator) {

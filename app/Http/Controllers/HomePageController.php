@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Tag;
 use App\Models\Video;
+use App\Support\DiskPath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -98,7 +99,7 @@ class HomePageController extends Controller
                 $request->only(['show', 'order', 'category', 'subcategory', 'tag']),
                 ['search' => $search]
             ),
-            'disk_file_location' => env('DISK_FILE_LOCATION', '/Volumes/Files/server/'),
+            'disk_file_location' => DiskPath::root(),
         ]);
     }
 }

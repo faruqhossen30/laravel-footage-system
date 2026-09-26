@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SubCategory;
 use App\Models\Tag;
 use App\Models\Video;
+use App\Support\DiskPath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -117,8 +118,8 @@ class VideoApiController extends Controller
         $file_exist = false;
 
         if ($video && $video->file_path) {
-            $file_path = env('DISK_FILE_LOCATION').$video->file_path;
-            $file_exist = file_exists($file_path);
+            $file_path = DiskPath::resolve($video->file_path);
+            $file_exist = $file_path ? file_exists($file_path) : false;
         }
 
         return response()->json([
@@ -181,12 +182,11 @@ class VideoApiController extends Controller
         }
 
         // 4. Map response to return ID, title, video link (local path), and duration
-        $diskLocation = env('DISK_FILE_LOCATION', '');
-        $data = $videos->map(function ($video) use ($diskLocation) {
+        $data = $videos->map(function ($video) {
             return [
                 'id' => $video->id,
                 'title' => $video->title,
-                'video_link' => $video->file_path ? ($diskLocation.$video->file_path) : null,
+                'video_link' => DiskPath::resolve($video->file_path),
                 'duration' => $video->duration,
             ];
         });

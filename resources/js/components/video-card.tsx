@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { ArrowDownTrayIcon, PlayIcon, ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
 
-const VideoCard = ({ video, onPlay }) => {
+const VideoCard = ({ video, onPlay, diskFileLocation }) => {
     const [copied, setCopied] = useState(false);
 
     // Simple time format helper
@@ -12,8 +12,8 @@ const VideoCard = ({ video, onPlay }) => {
         return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     };
 
-    // Full disk path according to VideoResource: env('DISK_FILE_LOCATION') . $video->file_path
-    const diskPath = video.disk_path || (video.file_path ? `/Volumes/Files/server/${video.file_path}` : '');
+    // Full disk path according to VideoResource or disk_path attribute
+    const diskPath = video.disk_path || (video.file_path ? `${diskFileLocation || ''}${video.file_path}` : '');
 
     const handleCopyPath = async (e) => {
         e.stopPropagation();
