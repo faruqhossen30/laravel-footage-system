@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\VideoProvider;
+use App\Enums\VideoStatus;
 use App\Http\Controllers\Controller;
 use App\Jobs\DownloadVideo;
 use App\Models\Category;
@@ -14,6 +16,7 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -179,7 +182,231 @@ class VideoController extends Controller
         return to_route('video.index');
     }
 
-    public function store(Request $request) {}
+    /**
+     * Show the manual video upload form.
+     */
+    public function upload()
+    {
+        $allCategories = Category::orderBy('name')->get(['id', 'name', 'slug']);
+        $allSubCategories = SubCategory::orderBy('name')->get(['id', 'name', 'slug', 'category_id']);
+        $allTags = Tag::orderBy('name')->get(['id', 'name', 'slug']);
+
+        return Inertia::render('admin/video/upload', [
+            'tags' => $allTags,
+            'categories' => $allCategories,
+            'subCategories' => $allSubCategories,
+        ]);
+    }
+
+    /**
+     * Store a manually uploaded video from PC.
+     */
+    public function storeManual(Request $request)
+    {
+        $validated = $request->validate([
+            'video' => ['required', 'file', 'mimetypes:video/mp4,video/quicktime,video/webm,video/x-matroska,video/avi,video/x-msvideo', 'max:204800'],
+            'title' => ['nullable', 'string', 'max:255'],
+            'thumbnail' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
+            'thumbnail_blob' => ['nullable', 'string'],
+            'duration' => ['nullable', 'numeric'],
+            'width' => ['nullable'],
+            'height' => ['nullable'],
+            'video_quality' => ['nullable', 'string', 'max:50'],
+            'category_ids' => ['nullable', 'array'],
+            'category_ids.*' => ['integer', 'exists:categories,id'],
+            'sub_category_ids' => ['nullable', 'array'],
+            'sub_category_ids.*' => ['integer', 'exists:sub_categories,id'],
+            'tag_ids' => ['nullable', 'array'],
+            'tag_ids.*' => ['integer', 'exists:tags,id'],
+            'new_tags' => ['nullable'],
+        ]);
+
+        $videoFile = $request->file('video');
+        $originalName = $videoFile->getClientOriginalName();
+        $extension = $videoFile->getClientOriginalExtension() ?: 'mp4';
+        $rawBaseName = pathinfo($originalName, PATHINFO_FILENAME);
+        $cleanBaseName = Str::slug($rawBaseName);
+        if ($cleanBaseName === '') {
+            $cleanBaseName = 'video';
+        }
+        $videoFileName = time().'_'.$cleanBaseName.'.'.$extension;
+
+        $videoTargetDir = DiskPath::root() !== ''
+            ? DiskPath::dir('videos')
+            : Storage::disk('public')->path('videos');
+
+        if (! is_dir($videoTargetDir)) {
+            mkdir($videoTargetDir, 0755, true);
+        }
+
+        $videoFile->move($videoTargetDir, $videoFileName);
+        $videoRelativePath = 'videos/'.$videoFileName;
+        $videoFullPath = $videoTargetDir.'/'.$videoFileName;
+
+        // Process thumbnail
+        $thumbnailRelativePath = null;
+        if ($request->hasFile('thumbnail')) {
+            $thumbFile = $request->file('thumbnail');
+            $thumbExt = $thumbFile->getClientOriginalExtension() ?: 'jpg';
+            $thumbFileName = 'thumb_'.time().'_'.Str::random(8).'.'.$thumbExt;
+            $thumbTargetDir = DiskPath::root() !== ''
+                ? DiskPath::dir('thumbnails')
+                : public_path('thumbnails');
+
+            if (! is_dir($thumbTargetDir)) {
+                mkdir($thumbTargetDir, 0755, true);
+            }
+
+            $thumbFile->move($thumbTargetDir, $thumbFileName);
+            $thumbnailRelativePath = 'thumbnails/'.$thumbFileName;
+        } elseif ($request->filled('thumbnail_blob')) {
+            $blob = $request->input('thumbnail_blob');
+            if (preg_match('/^data:image\/(\w+);base64,/', $blob, $matches)) {
+                $ext = strtolower($matches[1]) === 'png' ? 'png' : 'jpg';
+                $decoded = base64_decode(substr($blob, strpos($blob, ',') + 1));
+                if ($decoded !== false) {
+                    $thumbFileName = 'thumb_'.time().'_'.Str::random(8).'.'.$ext;
+                    $thumbTargetDir = DiskPath::root() !== ''
+                        ? DiskPath::dir('thumbnails')
+                        : public_path('thumbnails');
+
+                    if (! is_dir($thumbTargetDir)) {
+                        mkdir($thumbTargetDir, 0755, true);
+                    }
+
+                    file_put_contents($thumbTargetDir.'/'.$thumbFileName, $decoded);
+                    $thumbnailRelativePath = 'thumbnails/'.$thumbFileName;
+                }
+            }
+        }
+
+        // Fallback: try ffmpeg if available to generate thumbnail
+        if (! $thumbnailRelativePath && file_exists($videoFullPath)) {
+            $ffmpegPath = trim((string) shell_exec('which ffmpeg 2>/dev/null'));
+            if ($ffmpegPath !== '') {
+                $thumbFileName = 'thumb_'.time().'_'.Str::random(8).'.jpg';
+                $thumbTargetDir = DiskPath::root() !== ''
+                    ? DiskPath::dir('thumbnails')
+                    : public_path('thumbnails');
+
+                if (! is_dir($thumbTargetDir)) {
+                    mkdir($thumbTargetDir, 0755, true);
+                }
+
+                $thumbFullPath = $thumbTargetDir.'/'.$thumbFileName;
+                @shell_exec(escapeshellcmd($ffmpegPath).' -ss 00:00:01 -i '.escapeshellarg($videoFullPath).' -vframes 1 -q:v 2 '.escapeshellarg($thumbFullPath).' 2>&1');
+                if (file_exists($thumbFullPath) && filesize($thumbFullPath) > 0) {
+                    $thumbnailRelativePath = 'thumbnails/'.$thumbFileName;
+                }
+            }
+        }
+
+        // Title handling
+        $title = trim((string) $request->input('title'));
+        if ($title === '') {
+            $title = ucwords(str_replace(['-', '_', '.'], ' ', $rawBaseName));
+        }
+
+        // Metadata extraction
+        $size = file_exists($videoFullPath) ? (string) filesize($videoFullPath) : ($request->input('size') ?? null);
+        $duration = $request->filled('duration') ? (int) round((float) $request->input('duration')) : null;
+        $width = $request->input('width') ? (string) $request->input('width') : null;
+        $height = $request->input('height') ? (string) $request->input('height') : null;
+        $videoQuality = $request->input('video_quality') ?: null;
+        if (! $videoQuality && $height) {
+            $h = (int) $height;
+            if ($h >= 2160) {
+                $videoQuality = '4K';
+            } elseif ($h >= 1440) {
+                $videoQuality = '2K';
+            } elseif ($h >= 1080) {
+                $videoQuality = '1080p';
+            } elseif ($h >= 720) {
+                $videoQuality = '720p';
+            } elseif ($h >= 480) {
+                $videoQuality = '480p';
+            }
+        }
+
+        $video = Video::create([
+            'title' => $title,
+            'povider' => VideoProvider::MANUAL,
+            'povider_id' => 'manual_'.time().'_'.Str::random(6),
+            'file_name' => $originalName,
+            'file_path' => $videoRelativePath,
+            'thumbnail' => $thumbnailRelativePath,
+            'width' => $width,
+            'height' => $height,
+            'size' => $size,
+            'duration' => $duration,
+            'video_quality' => $videoQuality,
+            'status' => VideoStatus::DONE,
+        ]);
+
+        // Tags
+        $tagIds = $request->input('tag_ids', []);
+        if (! is_array($tagIds)) {
+            $tagIds = [];
+        }
+
+        $newTags = $request->input('new_tags');
+        if (! empty($newTags)) {
+            $tagNames = is_array($newTags) ? $newTags : explode(',', (string) $newTags);
+            foreach ($tagNames as $name) {
+                $name = trim($name);
+                if ($name === '') {
+                    continue;
+                }
+
+                $existing = Tag::where('name', $name)->first();
+                if ($existing) {
+                    $tagIds[] = $existing->id;
+
+                    continue;
+                }
+
+                $baseSlug = Str::slug($name);
+                $slug = $baseSlug;
+                $i = 1;
+                while (Tag::where('slug', $slug)->exists()) {
+                    $slug = $baseSlug.'-'.$i;
+                    $i++;
+                }
+
+                $tag = Tag::create([
+                    'name' => $name,
+                    'slug' => $slug,
+                    'status' => true,
+                ]);
+                $tagIds[] = $tag->id;
+            }
+        }
+
+        if (! empty($tagIds)) {
+            $video->tags()->sync(array_unique($tagIds));
+        }
+
+        // Categories & SubCategories
+        $categoryIds = $request->input('category_ids', []);
+        if (is_array($categoryIds) && ! empty($categoryIds)) {
+            $video->categories()->sync($categoryIds);
+        }
+
+        $requestedSubIds = $request->input('sub_category_ids', []);
+        if (is_array($requestedSubIds) && ! empty($requestedSubIds)) {
+            $allowedSubIds = SubCategory::query()
+                ->whereIn('id', $requestedSubIds)
+                ->when(! empty($categoryIds), function ($q) use ($categoryIds) {
+                    $q->whereIn('category_id', $categoryIds);
+                })
+                ->pluck('id')
+                ->all();
+
+            $video->subCategories()->sync($allowedSubIds);
+        }
+
+        return redirect()->route('video.index')->with('success', 'Video uploaded successfully.');
+    }
 
     public function edit(Video $video)
     {

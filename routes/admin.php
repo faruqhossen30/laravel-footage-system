@@ -13,6 +13,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::resource('tag', TagController::class);
 
     Route::get('video', [VideoController::class, 'index'])->name('video.index');
+    Route::get('video/upload', [VideoController::class, 'upload'])->name('video.upload');
+    Route::post('video/upload', [VideoController::class, 'storeManual'])->name('video.upload.store');
     Route::get('video/create', [VideoController::class, 'create'])->name('video.create');
     Route::get('video/search', [VideoController::class, 'searchByPath'])->name('video.search');
     Route::post('video', [VideoController::class, 'pixabayStore'])->name('video.pixabay.store');

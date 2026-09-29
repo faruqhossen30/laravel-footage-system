@@ -8,4 +8,5 @@ enum VideoProvider: string
     case PIXABAY = 'pixabay';
     case STORYBLOCKS = 'storyblocks';
     case FREEPIK = 'freepik';
+    case MANUAL = 'manual';
 }

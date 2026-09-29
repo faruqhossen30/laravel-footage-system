@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { EyeIcon, PencilIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { ArrowUpTrayIcon, EyeIcon, PencilIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import Pagination from '@/components/old/Pagination';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -40,12 +40,20 @@ export default function Index({ videos, categories = [], subCategories = [], fil
                     </BreadcrumbList>
                 </Breadcrumb>
 
-                <Button asChild className="gap-2">
-                    <Link href={route('video.create')}>
-                        <PlusIcon className="w-4 h-4" />
-                        Insert Video
-                    </Link>
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" asChild className="gap-2">
+                        <Link href={route('video.create')}>
+                            <PlusIcon className="w-4 h-4" />
+                            Import API Video
+                        </Link>
+                    </Button>
+                    <Button asChild className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white">
+                        <Link href={route('video.upload')}>
+                            <ArrowUpTrayIcon className="w-4 h-4" />
+                            Upload Video
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             <Card>
