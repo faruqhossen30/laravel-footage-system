@@ -89,3 +89,4 @@ Route::get('categories/{id}', [CategoryApiController::class, 'show']);
 Route::get('sub-categories', [SubCategoryApiController::class, 'index']);
 Route::get('sub-categories/{id}', [SubCategoryApiController::class, 'show']);
 Route::get('tags', [TagApiController::class, 'index']);
+Route::get('taxonomy', [VideoApiController::class, 'taxonomy']);

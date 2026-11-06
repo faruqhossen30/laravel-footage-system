@@ -7,9 +7,10 @@ use App\Jobs\DownloadImage;
 use App\Models\Image;
 use App\Models\SubCategory;
 use App\Models\Tag;
+use App\Services\FootageSearchService;
 use App\Support\DiskPath;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -132,67 +133,27 @@ class ImageApiController extends Controller
         ]);
     }
 
-    public function getImagesLinksAndSize(Request $request)
+    public function getImagesLinksAndSize(Request $request, FootageSearchService $footageSearchService): JsonResponse
     {
-        $query = Image::query();
-
-        $hasIds = false;
-        if ($request->has('ids')) {
-            $ids = $request->get('ids');
-            if (is_string($ids)) {
-                $ids = array_filter(explode(',', $ids));
-            }
-            if (is_array($ids) && ! empty($ids)) {
-                $query->whereIn('id', $ids);
-                $hasIds = true;
-            }
+        $queries = $request->input('queries');
+        if (is_string($queries)) {
+            $queries = array_values(array_filter(array_map('trim', explode(',', $queries))));
         }
 
-        $search = null;
-        if ($request->has('search')) {
-            $search = trim($request->get('search'));
-        } elseif ($request->has('query')) {
-            $search = trim($request->get('query'));
-        }
+        $allowFallback = $request->has('fallback')
+            ? $request->boolean('fallback')
+            : empty($queries);
 
-        if ($search) {
-            $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
-
-            $query->where(function ($q) use ($search, $likeOperator) {
-                $q->where('title', $likeOperator, "%{$search}%")
-                    ->orWhereHas('tags', function ($tagsQuery) use ($search, $likeOperator) {
-                        $terms = array_filter(explode(' ', $search));
-                        $tagsQuery->where(function ($subQ) use ($terms, $likeOperator) {
-                            foreach ($terms as $term) {
-                                $subQ->orWhere('name', $likeOperator, "%{$term}%");
-                            }
-                        });
-                    });
-            });
-        }
-
-        if (! $hasIds) {
-            $limit = $request->integer('limit', 5);
-            $query->limit($limit);
-        }
-
-        $images = $query->get();
-        if (! count($images)) {
-            $images = Image::inRandomOrder()->limit(3)->get();
-        }
-
-        $data = $images->map(function ($image) {
-            return [
-                'id' => $image->id,
-                'title' => $image->title,
-                'image_link' => $image->file_path
-                    ? (DiskPath::root() !== '' ? DiskPath::resolve($image->file_path) : asset('storage/'.$image->file_path))
-                    : null,
-                'width' => $image->width,
-                'height' => $image->height,
-                'size' => $image->size,
-            ];
-        });
+        $data = $footageSearchService->searchImages([
+            'ids' => $request->input('ids'),
+            'queries' => is_array($queries) ? $queries : null,
+            'search' => $request->input('search'),
+            'query' => $request->input('query'),
+            'category' => $request->input('category'),
+            'sub_category' => $request->input('sub_category'),
+            'limit' => $request->integer('limit', 5),
+            'allow_fallback' => $allowFallback,
+        ]);
 
         return response()->json($data);
     }

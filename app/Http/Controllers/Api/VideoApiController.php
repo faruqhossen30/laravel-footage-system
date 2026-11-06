@@ -6,9 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\SubCategory;
 use App\Models\Tag;
 use App\Models\Video;
+use App\Services\FootageSearchService;
 use App\Support\DiskPath;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class VideoApiController extends Controller
@@ -129,68 +130,36 @@ class VideoApiController extends Controller
         ]);
     }
 
-    public function getVideosLinksAndDuration(Request $request)
+    public function getVideosLinksAndDuration(Request $request, FootageSearchService $footageSearchService): JsonResponse
     {
-        $query = Video::query();
-
-        // 1. Filter by specific IDs if provided
-        $hasIds = false;
-        if ($request->has('ids')) {
-            $ids = $request->get('ids');
-            if (is_string($ids)) {
-                $ids = array_filter(explode(',', $ids));
-            }
-            if (is_array($ids) && ! empty($ids)) {
-                $query->whereIn('id', $ids);
-                $hasIds = true;
-            }
+        $queries = $request->input('queries');
+        if (is_string($queries)) {
+            $queries = array_values(array_filter(array_map('trim', explode(',', $queries))));
         }
 
-        // 2. Search by keyword/title/tags if provided
-        $search = null;
-        if ($request->has('search')) {
-            $search = trim($request->get('search'));
-        } elseif ($request->has('query')) {
-            $search = trim($request->get('query'));
-        }
+        $allowFallback = $request->has('fallback')
+            ? $request->boolean('fallback')
+            : empty($queries);
 
-        if ($search) {
-            $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
-
-            $query->where(function ($q) use ($search, $likeOperator) {
-                $q->where('title', $likeOperator, "%{$search}%")
-                    ->orWhereHas('tags', function ($tagsQuery) use ($search, $likeOperator) {
-                        $terms = array_filter(explode(' ', $search));
-                        $tagsQuery->where(function ($subQ) use ($terms, $likeOperator) {
-                            foreach ($terms as $term) {
-                                $subQ->orWhere('name', $likeOperator, "%{$term}%");
-                            }
-                        });
-                    });
-            });
-        }
-
-        // 3. Retrieve videos (limit only when no ids query is provided)
-        if (! $hasIds) {
-            $limit = $request->integer('limit', 5);
-            $query->limit($limit);
-        }
-
-        $videos = $query->get();
-        if (! count($videos)) {
-            $videos = Video::inRandomOrder()->limit(3)->get();
-        }
-
-        // 4. Map response to return ID, title, video link (local path), and duration
-        $data = $videos->map(function ($video) {
-            return [
-                'id' => $video->id,
-                'title' => $video->title,
-                'video_link' => DiskPath::resolve($video->file_path),
-                'duration' => $video->duration,
-            ];
-        });
+        $data = $footageSearchService->searchVideos([
+            'ids' => $request->input('ids'),
+            'queries' => is_array($queries) ? $queries : null,
+            'search' => $request->input('search'),
+            'query' => $request->input('query'),
+            'category' => $request->input('category'),
+            'sub_category' => $request->input('sub_category'),
+            'min_duration' => $request->input('min_duration'),
+            'limit' => $request->integer('limit', 5),
+            'allow_fallback' => $allowFallback,
+        ]);
 
         return response()->json($data);
+    }
+
+    public function taxonomy(Request $request, FootageSearchService $footageSearchService): JsonResponse
+    {
+        return response()->json(
+            $footageSearchService->getTaxonomy($request->integer('tag_limit', 100))
+        );
     }
 }
